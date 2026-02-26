@@ -8,23 +8,17 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             // Tab content
-            TabView(selection: $selectedTab) {
-                DashboardView(selectedTab: $selectedTab)
-                    .tag(0)
-
-                GlucoseEntryView()
-                    .tag(1)
-
-                DoseCalculatorView()
-                    .tag(2)
-
-                MealLogView()
-                    .tag(3)
-
-                TrendsView(selectedTab: $selectedTab)
-                    .tag(4)
+            Group {
+                switch selectedTab {
+                case 0: DashboardView(selectedTab: $selectedTab)
+                case 1: GlucoseEntryView()
+                case 2: DoseCalculatorView()
+                case 3: MealLogView()
+                case 4: TrendsView(selectedTab: $selectedTab)
+                default: DashboardView(selectedTab: $selectedTab)
+                }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Custom nav bar
             ChaosTabBar(selectedTab: $selectedTab)
