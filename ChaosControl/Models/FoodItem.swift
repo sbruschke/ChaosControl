@@ -7,6 +7,10 @@ import SwiftData
 final class FoodItem {
     var name: String
     var carbsPerServing: Double
+    var proteinPerServing: Double
+    var fatPerServing: Double
+    var fiberPerServing: Double
+    var caloriesPerServing: Double
     var defaultServingSize: String
     var category: String
     var isFavorite: Bool
@@ -16,6 +20,10 @@ final class FoodItem {
     init(
         name: String,
         carbsPerServing: Double,
+        proteinPerServing: Double = 0,
+        fatPerServing: Double = 0,
+        fiberPerServing: Double = 0,
+        caloriesPerServing: Double = 0,
         defaultServingSize: String = "1 serving",
         category: String = "UNCATEGORIZED",
         isFavorite: Bool = false,
@@ -24,6 +32,10 @@ final class FoodItem {
     ) {
         self.name = name
         self.carbsPerServing = carbsPerServing
+        self.proteinPerServing = proteinPerServing
+        self.fatPerServing = fatPerServing
+        self.fiberPerServing = fiberPerServing
+        self.caloriesPerServing = caloriesPerServing
         self.defaultServingSize = defaultServingSize
         self.category = category
         self.isFavorite = isFavorite

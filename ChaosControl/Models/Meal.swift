@@ -17,16 +17,28 @@ enum MealType: String, Codable, CaseIterable {
 final class MealItem {
     var name: String
     var carbs: Double
+    var protein: Double
+    var fat: Double
+    var fiber: Double
+    var calories: Double
     var servingSize: String
     var meal: Meal?
 
     init(
         name: String,
         carbs: Double,
+        protein: Double = 0,
+        fat: Double = 0,
+        fiber: Double = 0,
+        calories: Double = 0,
         servingSize: String = ""
     ) {
         self.name = name
         self.carbs = carbs
+        self.protein = protein
+        self.fat = fat
+        self.fiber = fiber
+        self.calories = calories
         self.servingSize = servingSize
     }
 }

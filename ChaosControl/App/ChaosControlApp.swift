@@ -27,10 +27,8 @@ struct ChaosControlApp: App {
             isStoredInMemoryOnly: false
         )
 
-        do {
+        func createContainer() throws -> ModelContainer {
             let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-
-            // Ensure default settings exist
             let context = ModelContext(container)
             let descriptor = FetchDescriptor<UserSettings>()
             if (try? context.fetch(descriptor))?.isEmpty ?? true {
@@ -38,10 +36,23 @@ struct ChaosControlApp: App {
                 context.insert(defaultSettings)
                 try? context.save()
             }
-
             return container
+        }
+
+        do {
+            return try createContainer()
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            // Schema mismatch — delete old store and retry
+            let url = modelConfiguration.url
+            let storePath = url.path()
+            for suffix in ["", "-wal", "-shm"] {
+                try? FileManager.default.removeItem(atPath: storePath + suffix)
+            }
+            do {
+                return try createContainer()
+            } catch {
+                fatalError("Could not create ModelContainer: \(error)")
+            }
         }
     }()
 
