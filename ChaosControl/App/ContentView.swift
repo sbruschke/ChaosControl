@@ -58,7 +58,7 @@ struct ChaosTabBar: View {
                             .tracking(1.5)
                     }
                     .opacity(selectedTab == index ? 1 : 0.35)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
