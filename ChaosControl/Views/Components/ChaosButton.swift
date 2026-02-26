@@ -9,7 +9,7 @@ struct ChaosButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(ChaosTheme.font(10))
+                .font(ChaosTheme.font(14))
                 .foregroundColor(ChaosTheme.red)
                 .tracking(4)
                 .frame(maxWidth: .infinity)
@@ -46,7 +46,7 @@ struct ChaosSecondaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(ChaosTheme.font(9))
+                .font(ChaosTheme.font(12))
                 .foregroundColor(ChaosTheme.faded)
                 .tracking(3)
                 .frame(maxWidth: .infinity)

@@ -43,12 +43,12 @@ struct ChaosTheme {
     }
 
     // Common font sizes
-    static let displayFont = font(42)
-    static let titleFont = font(13)
-    static let bodyFont = font(10)
-    static let captionFont = font(8)
-    static let microFont = font(7)
-    static let annotationFont = font(6.5)
+    static let displayFont = font(48)
+    static let titleFont = font(18)
+    static let bodyFont = font(14)
+    static let captionFont = font(11)
+    static let microFont = font(9)
+    static let annotationFont = font(8)
 
     // MARK: - Spacing
 
@@ -150,5 +150,30 @@ struct CornerBracket: Shape {
 extension View {
     func chaosCard() -> some View {
         modifier(ChaosCardStyle())
+    }
+
+    func chaosKeyboardDismiss() -> some View {
+        modifier(ChaosKeyboardDismiss())
+    }
+}
+
+// MARK: - Keyboard Dismiss Modifier
+
+struct ChaosKeyboardDismiss: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    } label: {
+                        Text("DONE")
+                            .font(ChaosTheme.captionFont)
+                            .foregroundColor(ChaosTheme.red)
+                            .tracking(2)
+                    }
+                }
+            }
     }
 }

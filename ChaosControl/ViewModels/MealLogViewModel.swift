@@ -8,32 +8,27 @@ final class MealLogViewModel {
     var currentItems: [MealItem] = []
     var searchText: String = ""
     var isSaving = false
+    var mealName: String = ""
 
     // New item entry
     var newItemName: String = ""
     var newItemCarbs: Double = 0
-    var newItemProtein: Double = 0
-    var newItemFat: Double = 0
-    var newItemFiber: Double = 0
-    var newItemCalories: Double = 0
     var newItemServing: String = ""
+    var newItemCategory: String = "UNCATEGORIZED"
     var showingAddItem = false
+    var showingCategoryManagement = false
+
+    // Category filter
+    var selectedCategory: String? = nil
+    var allCategories: [String] = []
 
     var totalCarbs: Double { currentItems.reduce(0) { $0 + $1.carbs } }
-    var totalProtein: Double { currentItems.reduce(0) { $0 + $1.protein } }
-    var totalFat: Double { currentItems.reduce(0) { $0 + $1.fat } }
-    var totalFiber: Double { currentItems.reduce(0) { $0 + $1.fiber } }
-    var totalCalories: Double { currentItems.reduce(0) { $0 + $1.calories } }
 
     func addItem() {
         guard !newItemName.isEmpty else { return }
         let item = MealItem(
             name: newItemName.uppercased(),
             carbs: newItemCarbs,
-            protein: newItemProtein,
-            fat: newItemFat,
-            fiber: newItemFiber,
-            calories: newItemCalories,
             servingSize: newItemServing
         )
         currentItems.append(item)
@@ -44,10 +39,6 @@ final class MealLogViewModel {
         let item = MealItem(
             name: food.name,
             carbs: food.carbsPerServing,
-            protein: food.proteinPerServing,
-            fat: food.fatPerServing,
-            fiber: food.fiberPerServing,
-            calories: food.caloriesPerServing,
             servingSize: food.defaultServingSize
         )
         currentItems.append(item)
@@ -67,6 +58,7 @@ final class MealLogViewModel {
 
         let meal = Meal(
             mealType: selectedMealType,
+            name: mealName.isEmpty ? nil : mealName.uppercased(),
             items: currentItems
         )
 
@@ -81,11 +73,8 @@ final class MealLogViewModel {
                 let foodItem = FoodItem(
                     name: item.name,
                     carbsPerServing: item.carbs,
-                    proteinPerServing: item.protein,
-                    fatPerServing: item.fat,
-                    fiberPerServing: item.fiber,
-                    caloriesPerServing: item.calories,
                     defaultServingSize: item.servingSize,
+                    category: newItemCategory,
                     lastUsed: .now,
                     useCount: 1
                 )
@@ -105,6 +94,24 @@ final class MealLogViewModel {
         return (try? modelContext.fetch(descriptor)) ?? []
     }
 
+    func loadFoodsByCategory(modelContext: ModelContext, category: String) -> [FoodItem] {
+        let predicate = #Predicate<FoodItem> { $0.category == category }
+        let descriptor = FetchDescriptor<FoodItem>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.name)]
+        )
+        return (try? modelContext.fetch(descriptor)) ?? []
+    }
+
+    func loadCategories(modelContext: ModelContext) {
+        var categories = DefaultFoodCategory.defaultNames
+        let descriptor = FetchDescriptor<UserSettings>()
+        if let settings = try? modelContext.fetch(descriptor).first {
+            categories.append(contentsOf: settings.customCategories)
+        }
+        allCategories = categories
+    }
+
     func loadFavoriteFoods(modelContext: ModelContext) -> [FoodItem] {
         let predicate = #Predicate<FoodItem> { $0.isFavorite == true }
         let descriptor = FetchDescriptor<FoodItem>(
@@ -118,16 +125,15 @@ final class MealLogViewModel {
         currentItems = []
         selectedMealType = .midday
         searchText = ""
+        mealName = ""
+        selectedCategory = nil
     }
 
     private func clearNewItem() {
         newItemName = ""
         newItemCarbs = 0
-        newItemProtein = 0
-        newItemFat = 0
-        newItemFiber = 0
-        newItemCalories = 0
         newItemServing = ""
+        newItemCategory = "UNCATEGORIZED"
         showingAddItem = false
     }
 }

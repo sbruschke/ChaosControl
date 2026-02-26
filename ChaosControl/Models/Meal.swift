@@ -17,28 +17,16 @@ enum MealType: String, Codable, CaseIterable {
 final class MealItem {
     var name: String
     var carbs: Double
-    var protein: Double
-    var fat: Double
-    var fiber: Double
-    var calories: Double
     var servingSize: String
     var meal: Meal?
 
     init(
         name: String,
         carbs: Double,
-        protein: Double = 0,
-        fat: Double = 0,
-        fiber: Double = 0,
-        calories: Double = 0,
         servingSize: String = ""
     ) {
         self.name = name
         self.carbs = carbs
-        self.protein = protein
-        self.fat = fat
-        self.fiber = fiber
-        self.calories = calories
         self.servingSize = servingSize
     }
 }
@@ -49,6 +37,7 @@ final class MealItem {
 final class Meal {
     var timestamp: Date
     var mealTypeRawValue: String
+    var name: String?
     @Relationship(deleteRule: .cascade, inverse: \MealItem.meal)
     var items: [MealItem]
     var notes: String?
@@ -62,30 +51,16 @@ final class Meal {
         items.reduce(0) { $0 + $1.carbs }
     }
 
-    var totalProtein: Double {
-        items.reduce(0) { $0 + $1.protein }
-    }
-
-    var totalFat: Double {
-        items.reduce(0) { $0 + $1.fat }
-    }
-
-    var totalFiber: Double {
-        items.reduce(0) { $0 + $1.fiber }
-    }
-
-    var totalCalories: Double {
-        items.reduce(0) { $0 + $1.calories }
-    }
-
     init(
         timestamp: Date = .now,
         mealType: MealType = .snack,
+        name: String? = nil,
         items: [MealItem] = [],
         notes: String? = nil
     ) {
         self.timestamp = timestamp
         self.mealTypeRawValue = mealType.rawValue
+        self.name = name
         self.items = items
         self.notes = notes
     }

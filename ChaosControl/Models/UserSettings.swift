@@ -35,6 +35,9 @@ final class UserSettings {
     /// Preferred unit: "mgdl" or "mmoll"
     var preferredUnit: String
 
+    /// Custom food categories added by the user
+    var customCategories: [String]
+
     init(
         carbRatio: Double = 10,
         sensitivityFactor: Double = 40,
@@ -45,7 +48,8 @@ final class UserSettings {
         dexcomEnabled: Bool = false,
         dexcomRegion: String = "us",
         dexcomRefreshInterval: Double = 300,
-        preferredUnit: String = "mgdl"
+        preferredUnit: String = "mgdl",
+        customCategories: [String] = []
     ) {
         self.carbRatio = carbRatio
         self.sensitivityFactor = sensitivityFactor
@@ -57,5 +61,6 @@ final class UserSettings {
         self.dexcomRegion = dexcomRegion
         self.dexcomRefreshInterval = dexcomRefreshInterval
         self.preferredUnit = preferredUnit
+        self.customCategories = customCategories
     }
 }

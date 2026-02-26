@@ -6,6 +6,8 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var allSettings: [UserSettings]
 
+    var dashboardViewModel: DashboardViewModel
+
     @State private var carbRatio: Double = 10
     @State private var sensitivityFactor: Double = 40
     @State private var targetGlucose: Double = 120
@@ -48,94 +50,25 @@ struct SettingsView: View {
                         RedDivider().padding(.vertical, 16)
 
                         // Dexcom Integration
-                        settingsGroup("DEXCOM INTEGRATION") {
-                            Toggle(isOn: $dexcomEnabled) {
-                                Text("ENABLE DEXCOM")
-                                    .font(ChaosTheme.captionFont)
-                                    .foregroundColor(ChaosTheme.ink)
-                                    .tracking(2)
-                            }
-                            .tint(ChaosTheme.red)
-                            .padding(.vertical, 4)
-
-                            if dexcomEnabled {
-                                VStack(spacing: 12) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("USERNAME")
-                                            .font(ChaosTheme.microFont)
-                                            .foregroundColor(ChaosTheme.faded)
-                                            .tracking(2)
-                                        TextField("", text: $dexcomUsername)
-                                            .font(ChaosTheme.bodyFont)
-                                            .foregroundColor(ChaosTheme.ink)
-                                            .textInputAutocapitalization(.never)
-                                            .autocorrectionDisabled()
-                                            .padding(10)
-                                            .overlay(Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5))
-                                    }
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("PASSWORD")
-                                            .font(ChaosTheme.microFont)
-                                            .foregroundColor(ChaosTheme.faded)
-                                            .tracking(2)
-                                        SecureField("", text: $dexcomPassword)
-                                            .font(ChaosTheme.bodyFont)
-                                            .foregroundColor(ChaosTheme.ink)
-                                            .padding(10)
-                                            .overlay(Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5))
-                                    }
-
-                                    if !dexcomStatus.isEmpty {
-                                        Text(dexcomStatus)
-                                            .font(ChaosTheme.captionFont)
-                                            .foregroundColor(
-                                                dexcomStatus.contains("CONNECTED") ? ChaosTheme.inRange : ChaosTheme.red
-                                            )
-                                            .tracking(1)
-                                    }
-
-                                    ChaosButton(title: isConnecting ? "CONNECTING..." : "CONNECT") {
-                                        Task { await connectDexcom() }
-                                    }
-                                }
-                                .padding(.top, 8)
-                            }
-                        }
+                        dexcomSection
 
                         RedDivider().padding(.vertical, 16)
 
                         // About
                         settingsGroup("SYSTEM") {
-                            HStack {
-                                Text("VERSION")
-                                    .font(ChaosTheme.captionFont)
-                                    .foregroundColor(ChaosTheme.faded)
-                                    .tracking(2)
-                                Spacer()
-                                Text("0.1.0")
-                                    .font(ChaosTheme.bodyFont)
-                                    .foregroundColor(ChaosTheme.ink)
-                            }
-                            .padding(.vertical, 4)
-
-                            HStack {
-                                Text("REGION")
-                                    .font(ChaosTheme.captionFont)
-                                    .foregroundColor(ChaosTheme.faded)
-                                    .tracking(2)
-                                Spacer()
-                                Text("US")
-                                    .font(ChaosTheme.bodyFont)
-                                    .foregroundColor(ChaosTheme.ink)
-                            }
-                            .padding(.vertical, 4)
+                            SettingsRow(label: "VERSION", value: "0.1.0")
+                            SettingsRow(label: "REGION", value: "US")
                         }
                     }
                     .padding(ChaosTheme.screenPadding)
+                    .onTapGesture {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(ChaosTheme.background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("SETTINGS")
@@ -157,7 +90,113 @@ struct SettingsView: View {
                 }
             }
         }
+        .chaosKeyboardDismiss()
         .onAppear { loadSettings() }
+    }
+
+    // MARK: - Dexcom Section
+
+    private var dexcomSection: some View {
+        settingsGroup("DEXCOM INTEGRATION") {
+            if dashboardViewModel.dexcomConnected {
+                // Connected state
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(ChaosTheme.inRange)
+                            .frame(width: 6, height: 6)
+                        Text("\u{25C6} CONNECTED")
+                            .font(ChaosTheme.captionFont)
+                            .foregroundColor(ChaosTheme.inRange)
+                            .tracking(2)
+                    }
+
+                    if let username = try? KeychainService.getUsername() {
+                        SettingsRow(label: "ACCOUNT", value: username.uppercased())
+                    }
+
+                    ChaosButton(title: "DISCONNECT") {
+                        dashboardViewModel.disconnectDexcom()
+                        dexcomEnabled = false
+                        dexcomUsername = ""
+                        dexcomPassword = ""
+                        dexcomStatus = ""
+                    }
+                }
+            } else {
+                // Not connected state
+                Toggle(isOn: $dexcomEnabled) {
+                    Text("ENABLE DEXCOM")
+                        .font(ChaosTheme.captionFont)
+                        .foregroundColor(ChaosTheme.ink)
+                        .tracking(2)
+                }
+                .tint(ChaosTheme.red)
+                .padding(.vertical, 4)
+
+                if dexcomEnabled {
+                    VStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("USERNAME")
+                                .font(ChaosTheme.microFont)
+                                .foregroundColor(ChaosTheme.faded)
+                                .tracking(2)
+                            TextField("", text: $dexcomUsername)
+                                .font(ChaosTheme.bodyFont)
+                                .foregroundColor(ChaosTheme.ink)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .padding(10)
+                                .background(ChaosTheme.paperDark.opacity(0.5))
+                                .overlay(alignment: .bottom) {
+                                    LinearGradient(
+                                        colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                    .frame(height: 1.5)
+                                }
+                                .overlay(Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5))
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("PASSWORD")
+                                .font(ChaosTheme.microFont)
+                                .foregroundColor(ChaosTheme.faded)
+                                .tracking(2)
+                            SecureField("", text: $dexcomPassword)
+                                .font(ChaosTheme.bodyFont)
+                                .foregroundColor(ChaosTheme.ink)
+                                .padding(10)
+                                .background(ChaosTheme.paperDark.opacity(0.5))
+                                .overlay(alignment: .bottom) {
+                                    LinearGradient(
+                                        colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                    .frame(height: 1.5)
+                                }
+                                .overlay(Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5))
+                        }
+
+                        if !dexcomStatus.isEmpty {
+                            Text(dexcomStatus)
+                                .font(ChaosTheme.captionFont)
+                                .foregroundColor(
+                                    dexcomStatus.contains("CONNECTED") ? ChaosTheme.inRange : ChaosTheme.red
+                                )
+                                .tracking(1)
+                        }
+
+                        ChaosButton(title: isConnecting ? "CONNECTING..." : "CONNECT") {
+                            Task { await connectDexcom() }
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+            }
+        }
     }
 
     // MARK: - Helpers
@@ -185,6 +224,17 @@ struct SettingsView: View {
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.decimalPad)
                     .frame(width: 60)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 6)
+                    .background(ChaosTheme.paperDark.opacity(0.5))
+                    .overlay(alignment: .bottom) {
+                        LinearGradient(
+                            colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(height: 1.5)
+                    }
 
                 Text(unit)
                     .font(ChaosTheme.microFont)
@@ -211,7 +261,11 @@ struct SettingsView: View {
 
         if KeychainService.hasCredentials {
             dexcomUsername = (try? KeychainService.getUsername()) ?? ""
-            dexcomStatus = "CREDENTIALS STORED"
+            if dashboardViewModel.dexcomConnected {
+                dexcomStatus = "\u{25C6} CONNECTED"
+            } else {
+                dexcomStatus = "CREDENTIALS STORED"
+            }
         }
     }
 
@@ -247,14 +301,12 @@ struct SettingsView: View {
         isConnecting = true
         dexcomStatus = "AUTHENTICATING..."
 
-        let service = DexcomShareService(region: .us)
-        do {
-            try await service.authenticate(username: dexcomUsername, password: dexcomPassword)
-            try KeychainService.saveUsername(dexcomUsername)
-            try KeychainService.savePassword(dexcomPassword)
+        await dashboardViewModel.connectDexcom(username: dexcomUsername, password: dexcomPassword)
+
+        if dashboardViewModel.dexcomConnected {
             dexcomStatus = "\u{25C6} CONNECTED"
-        } catch {
-            dexcomStatus = "ERROR: \(error.localizedDescription.uppercased())"
+        } else if let error = dashboardViewModel.errorMessage {
+            dexcomStatus = "ERROR: \(error.uppercased())"
         }
 
         isConnecting = false

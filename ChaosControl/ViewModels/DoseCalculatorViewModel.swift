@@ -14,6 +14,12 @@ final class DoseCalculatorViewModel {
     var calculation: InsulinCalculation?
     var isSaving = false
 
+    // Food search
+    var foodSearchText: String = ""
+    var searchResults: [FoodItem] = []
+    var recentFoods: [FoodItem] = []
+    var showingFoodSearch = false
+
     func calculate() {
         calculation = InsulinCalculator.calculate(
             currentGlucose: currentGlucose,
@@ -40,6 +46,48 @@ final class DoseCalculatorViewModel {
         if let doses = try? modelContext.fetch(doseDescriptor) {
             insulinOnBoard = InsulinCalculator.calculateIOB(doses: doses)
         }
+
+        // Auto-populate latest glucose reading
+        if currentGlucose == 0 {
+            let readingDescriptor = FetchDescriptor<GlucoseReading>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+            if let latest = try? modelContext.fetch(readingDescriptor).first {
+                currentGlucose = latest.value
+            }
+        }
+
+        // Load recent foods
+        loadRecentFoods(modelContext: modelContext)
+    }
+
+    func searchFoods(modelContext: ModelContext) {
+        guard !foodSearchText.isEmpty else {
+            searchResults = []
+            return
+        }
+        let query = foodSearchText.uppercased()
+        let predicate = #Predicate<FoodItem> { $0.name.contains(query) }
+        var descriptor = FetchDescriptor<FoodItem>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.useCount, order: .reverse)]
+        )
+        descriptor.fetchLimit = 10
+        searchResults = (try? modelContext.fetch(descriptor)) ?? []
+    }
+
+    func loadRecentFoods(modelContext: ModelContext) {
+        var descriptor = FetchDescriptor<FoodItem>(
+            sortBy: [SortDescriptor(\.lastUsed, order: .reverse)]
+        )
+        descriptor.fetchLimit = 5
+        recentFoods = (try? modelContext.fetch(descriptor)) ?? []
+    }
+
+    func addFoodCarbs(_ food: FoodItem) {
+        carbIntake += food.carbsPerServing
+        foodSearchText = ""
+        searchResults = []
     }
 
     func loadFromReading(_ reading: GlucoseReading?) {

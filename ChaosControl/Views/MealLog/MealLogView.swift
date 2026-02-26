@@ -17,15 +17,15 @@ struct MealLogView: View {
                     header
                         .padding(.bottom, 16)
 
-                    // Search bar
-                    searchBar
+                    // Meal name input
+                    mealNameInput
                         .padding(.bottom, 14)
 
                     // Meal type tabs
                     mealTabs
                         .padding(.bottom, 16)
 
-                    // Current meal summary
+                    // Current meal summary (carbs only)
                     if !viewModel.currentItems.isEmpty {
                         mealSummary
                             .padding(.bottom, 16)
@@ -43,6 +43,10 @@ struct MealLogView: View {
 
                     ChaosDivider()
                         .padding(.bottom, 14)
+
+                    // Category filter
+                    categoryFilter
+                        .padding(.bottom, 12)
 
                     // Recent / favorites
                     recentSection
@@ -64,7 +68,11 @@ struct MealLogView: View {
                 }
                 .padding(.horizontal, ChaosTheme.screenPadding)
                 .padding(.bottom, 20)
+                .onTapGesture {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
             }
+            .chaosKeyboardDismiss()
 
             // Annotations
             VStack {
@@ -80,10 +88,14 @@ struct MealLogView: View {
         }
         .onAppear {
             recentFoods = viewModel.loadRecentFoods(modelContext: modelContext)
+            viewModel.loadCategories(modelContext: modelContext)
             autoSelectMealType()
         }
         .sheet(isPresented: $viewModel.showingAddItem) {
             addItemSheet
+        }
+        .sheet(isPresented: $viewModel.showingCategoryManagement) {
+            CategoryManagementView()
         }
         .overlay {
             if showSavedConfirmation {
@@ -95,54 +107,72 @@ struct MealLogView: View {
     // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("SUSTENANCE LOG")
-                .font(ChaosTheme.titleFont)
-                .foregroundColor(ChaosTheme.ink)
-                .tracking(4)
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("SUSTENANCE LOG")
+                    .font(ChaosTheme.titleFont)
+                    .foregroundColor(ChaosTheme.ink)
+                    .tracking(4)
 
-            HStack(spacing: 0) {
-                Text("MEAL TRACKING ")
-                    .font(ChaosTheme.captionFont)
-                    .foregroundColor(ChaosTheme.faded)
-                    .tracking(2)
-                Text("//")
-                    .font(ChaosTheme.captionFont)
-                    .foregroundColor(ChaosTheme.red)
-                Text(" \(Date.now.formatted(.dateTime.day().month(.abbreviated).year()).uppercased())")
-                    .font(ChaosTheme.captionFont)
-                    .foregroundColor(ChaosTheme.faded)
-                    .tracking(2)
+                HStack(spacing: 0) {
+                    Text("MEAL TRACKING ")
+                        .font(ChaosTheme.captionFont)
+                        .foregroundColor(ChaosTheme.faded)
+                        .tracking(2)
+                    Text("//")
+                        .font(ChaosTheme.captionFont)
+                        .foregroundColor(ChaosTheme.red)
+                    Text(" \(Date.now.formatted(.dateTime.day().month(.abbreviated).year()).uppercased())")
+                        .font(ChaosTheme.captionFont)
+                        .foregroundColor(ChaosTheme.faded)
+                        .tracking(2)
+                }
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Search
-
-    private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12))
-                .foregroundColor(ChaosTheme.ink.opacity(0.3))
-
-            Text("SEARCH FOODS...")
-                .font(ChaosTheme.bodyFont)
-                .foregroundColor(ChaosTheme.faded)
-                .tracking(2)
 
             Spacer()
+
+            Button {
+                viewModel.showingCategoryManagement = true
+            } label: {
+                Image(systemName: "square.grid.2x2")
+                    .font(.system(size: 15, weight: .light))
+                    .foregroundColor(ChaosTheme.ink.opacity(0.5))
+            }
         }
-        .padding(10)
-        .background(ChaosTheme.background.opacity(0.3))
-        .overlay(
-            Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5)
-        )
-        .overlay(alignment: .topLeading) {
-            CornerBracket()
-                .stroke(ChaosTheme.red, lineWidth: 0.5)
-                .frame(width: 5, height: 5)
-                .offset(x: -0.5, y: -0.5)
+    }
+
+    // MARK: - Meal Name
+
+    private var mealNameInput: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(ChaosTheme.red.opacity(0.4))
+                    .frame(width: 4, height: 4)
+                Text("MEAL NAME (OPTIONAL)")
+                    .font(ChaosTheme.microFont)
+                    .foregroundColor(ChaosTheme.faded)
+                    .tracking(2.5)
+            }
+
+            TextField("E.G. LUNCH AT HOME", text: $viewModel.mealName)
+                .font(ChaosTheme.bodyFont)
+                .foregroundColor(ChaosTheme.ink)
+                .textInputAutocapitalization(.characters)
+                .tracking(1)
+                .padding(10)
+                .background(ChaosTheme.paperDark.opacity(0.5))
+                .overlay(alignment: .bottom) {
+                    LinearGradient(
+                        colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(height: 1.5)
+                }
+                .overlay(
+                    Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5)
+                )
         }
     }
 
@@ -171,13 +201,13 @@ struct MealLogView: View {
         }
     }
 
-    // MARK: - Meal Summary
+    // MARK: - Meal Summary (carbs only)
 
     private var mealSummary: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("\(viewModel.selectedMealType.rawValue) INTAKE // ACTIVE")
-                    .font(ChaosTheme.font(9))
+                    .font(ChaosTheme.font(12))
                     .foregroundColor(ChaosTheme.ink)
                     .tracking(2)
                 Spacer()
@@ -187,47 +217,18 @@ struct MealLogView: View {
                     .tracking(1)
             }
 
-            HStack(spacing: 16) {
-                macroItem("CARBS", value: viewModel.totalCarbs, unit: "g", fill: ChaosTheme.red.opacity(0.5))
-                macroItem("PROTEIN", value: viewModel.totalProtein, unit: "g", fill: ChaosTheme.inRange.opacity(0.5))
-                macroItem("FAT", value: viewModel.totalFat, unit: "g", fill: ChaosTheme.warning.opacity(0.5))
-                macroItem("FIBER", value: viewModel.totalFiber, unit: "g", fill: ChaosTheme.ink.opacity(0.15))
-                macroItem("KCAL", value: viewModel.totalCalories, unit: "", fill: ChaosTheme.ink.opacity(0.1))
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text("\(Int(viewModel.totalCarbs))")
+                    .font(ChaosTheme.font(42))
+                    .foregroundColor(ChaosTheme.ink)
+                    .tracking(1)
+                Text("g CARBS")
+                    .font(ChaosTheme.captionFont)
+                    .foregroundColor(ChaosTheme.faded)
+                    .tracking(2)
             }
         }
         .chaosCard()
-    }
-
-    private func macroItem(_ label: String, value: Double, unit: String, fill: Color) -> some View {
-        VStack(spacing: 2) {
-            Text(label)
-                .font(ChaosTheme.annotationFont)
-                .foregroundColor(ChaosTheme.faded)
-                .tracking(2)
-
-            HStack(alignment: .lastTextBaseline, spacing: 1) {
-                Text("\(Int(value))")
-                    .font(ChaosTheme.font(16))
-                    .foregroundColor(ChaosTheme.ink)
-                if !unit.isEmpty {
-                    Text(unit)
-                        .font(ChaosTheme.microFont)
-                        .foregroundColor(ChaosTheme.faded)
-                }
-            }
-
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(ChaosTheme.ink.opacity(0.06))
-                        .frame(height: 2)
-                    Rectangle()
-                        .fill(fill)
-                        .frame(width: min(geo.size.width, geo.size.width * min(1, value / 100)), height: 2)
-                }
-            }
-            .frame(height: 2)
-        }
     }
 
     // MARK: - Logged Items
@@ -249,17 +250,19 @@ struct MealLogView: View {
                             .font(ChaosTheme.bodyFont)
                             .foregroundColor(ChaosTheme.ink)
                             .tracking(1)
-                        Text("\(item.servingSize) // \(Int(item.calories)) KCAL // \(Int(item.carbs))g CARB")
-                            .font(ChaosTheme.microFont)
-                            .foregroundColor(ChaosTheme.faded)
-                            .tracking(1)
+                        if !item.servingSize.isEmpty {
+                            Text(item.servingSize)
+                                .font(ChaosTheme.microFont)
+                                .foregroundColor(ChaosTheme.faded)
+                                .tracking(1)
+                        }
                     }
 
                     Spacer()
 
                     VStack(alignment: .trailing) {
                         Text("\(Int(item.carbs))")
-                            .font(ChaosTheme.font(14))
+                            .font(ChaosTheme.font(17))
                             .foregroundColor(ChaosTheme.ink)
                             .tracking(1)
                         Text("g")
@@ -282,7 +285,7 @@ struct MealLogView: View {
     private var addFoodButton: some View {
         Button { viewModel.showingAddItem = true } label: {
             Text("+ ADD FOOD ITEM")
-                .font(ChaosTheme.font(9))
+                .font(ChaosTheme.font(12))
                 .foregroundColor(ChaosTheme.faded)
                 .tracking(3)
                 .frame(maxWidth: .infinity)
@@ -295,15 +298,57 @@ struct MealLogView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: - Category Filter
+
+    private var categoryFilter: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionHeader(title: "FILTER BY CATEGORY")
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    // "All" pill
+                    categoryPill(name: "ALL", isSelected: viewModel.selectedCategory == nil) {
+                        viewModel.selectedCategory = nil
+                        recentFoods = viewModel.loadRecentFoods(modelContext: modelContext)
+                    }
+
+                    ForEach(viewModel.allCategories, id: \.self) { category in
+                        categoryPill(name: category, isSelected: viewModel.selectedCategory == category) {
+                            viewModel.selectedCategory = category
+                            recentFoods = viewModel.loadFoodsByCategory(modelContext: modelContext, category: category)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func categoryPill(name: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(name)
+                .font(ChaosTheme.microFont)
+                .foregroundColor(isSelected ? ChaosTheme.red : ChaosTheme.faded)
+                .tracking(1.5)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isSelected ? ChaosTheme.red.opacity(0.06) : .clear)
+                .overlay(
+                    Rectangle()
+                        .stroke(isSelected ? ChaosTheme.red.opacity(0.4) : ChaosTheme.border, lineWidth: 0.5)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - Recent Foods
 
     private var recentSection: some View {
         VStack(spacing: 0) {
-            SectionHeader(title: "RECENT // FAVORITES")
+            SectionHeader(title: viewModel.selectedCategory != nil ? "\(viewModel.selectedCategory!) FOODS" : "RECENT // FAVORITES")
                 .padding(.bottom, 8)
 
             if recentFoods.isEmpty {
-                Text("NO RECENT FOODS")
+                Text("NO FOODS FOUND")
                     .font(ChaosTheme.captionFont)
                     .foregroundColor(ChaosTheme.faded)
                     .tracking(2)
@@ -315,19 +360,19 @@ struct MealLogView: View {
                     } label: {
                         HStack {
                             Text("+")
-                                .font(ChaosTheme.font(12))
+                                .font(ChaosTheme.font(15))
                                 .foregroundColor(ChaosTheme.faded)
-                                .frame(width: 20, height: 20)
+                                .frame(width: 22, height: 22)
                                 .overlay(
                                     Rectangle().stroke(ChaosTheme.ink.opacity(0.15), lineWidth: 0.5)
                                 )
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(food.name)
-                                    .font(ChaosTheme.font(9))
+                                    .font(ChaosTheme.font(12))
                                     .foregroundColor(ChaosTheme.ink)
                                     .tracking(1)
-                                Text("\(Int(food.carbsPerServing))g CARB // \(Int(food.caloriesPerServing)) KCAL")
+                                Text("\(Int(food.carbsPerServing))g CARB // \(food.category)")
                                     .font(ChaosTheme.microFont)
                                     .foregroundColor(ChaosTheme.faded)
                                     .tracking(1)
@@ -343,7 +388,7 @@ struct MealLogView: View {
         }
     }
 
-    // MARK: - Add Item Sheet
+    // MARK: - Add Item Sheet (simplified)
 
     private var addItemSheet: some View {
         NavigationStack {
@@ -352,6 +397,7 @@ struct MealLogView: View {
 
                 ScrollView {
                     VStack(spacing: 14) {
+                        // Food name
                         VStack(alignment: .leading, spacing: 6) {
                             Text("FOOD NAME")
                                 .font(ChaosTheme.microFont)
@@ -359,42 +405,73 @@ struct MealLogView: View {
                                 .tracking(2.5)
 
                             TextField("", text: $viewModel.newItemName)
-                                .font(ChaosTheme.font(14))
+                                .font(ChaosTheme.font(17))
                                 .foregroundColor(ChaosTheme.ink)
                                 .textInputAutocapitalization(.characters)
                                 .padding(12)
+                                .background(ChaosTheme.paperDark.opacity(0.5))
+                                .overlay(alignment: .bottom) {
+                                    LinearGradient(
+                                        colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                    .frame(height: 1.5)
+                                }
                                 .overlay(Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5))
                         }
 
+                        // Serving size
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("SERVING SIZE")
+                            Text("QUANTITY / SERVING")
                                 .font(ChaosTheme.microFont)
                                 .foregroundColor(ChaosTheme.faded)
                                 .tracking(2.5)
 
-                            TextField("e.g. 1 CUP", text: $viewModel.newItemServing)
-                                .font(ChaosTheme.font(14))
+                            TextField("E.G. 1 CUP", text: $viewModel.newItemServing)
+                                .font(ChaosTheme.font(17))
                                 .foregroundColor(ChaosTheme.ink)
                                 .textInputAutocapitalization(.characters)
                                 .padding(12)
+                                .background(ChaosTheme.paperDark.opacity(0.5))
+                                .overlay(alignment: .bottom) {
+                                    LinearGradient(
+                                        colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                    .frame(height: 1.5)
+                                }
                                 .overlay(Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5))
                         }
 
+                        // Carbs
                         ChaosNumericField(label: "CARBS", value: $viewModel.newItemCarbs, unit: "g")
-                        ChaosNumericField(label: "PROTEIN", value: $viewModel.newItemProtein, unit: "g")
-                        ChaosNumericField(label: "FAT", value: $viewModel.newItemFat, unit: "g")
-                        ChaosNumericField(label: "FIBER", value: $viewModel.newItemFiber, unit: "g")
-                        ChaosNumericField(label: "CALORIES", value: $viewModel.newItemCalories, unit: "KCAL")
+
+                        // Category picker
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("CATEGORY")
+                                .font(ChaosTheme.microFont)
+                                .foregroundColor(ChaosTheme.faded)
+                                .tracking(2.5)
+
+                            categoryPickerGrid
+                        }
 
                         ChaosButton(title: "ADD ITEM") {
                             viewModel.addItem()
                         }
                     }
                     .padding(ChaosTheme.screenPadding)
+                    .onTapGesture {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
                 }
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(ChaosTheme.background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("ADD FOOD")
@@ -409,12 +486,43 @@ struct MealLogView: View {
                 }
             }
         }
+        .chaosKeyboardDismiss()
+    }
+
+    private var categoryPickerGrid: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible(), spacing: 6),
+            GridItem(.flexible(), spacing: 6),
+            GridItem(.flexible(), spacing: 6)
+        ], spacing: 6) {
+            ForEach(viewModel.allCategories, id: \.self) { category in
+                Button {
+                    viewModel.newItemCategory = category
+                } label: {
+                    Text(category)
+                        .font(ChaosTheme.microFont)
+                        .foregroundColor(viewModel.newItemCategory == category ? ChaosTheme.red : ChaosTheme.faded)
+                        .tracking(1)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(viewModel.newItemCategory == category ? ChaosTheme.red.opacity(0.06) : .clear)
+                        .overlay(
+                            Rectangle()
+                                .stroke(
+                                    viewModel.newItemCategory == category ? ChaosTheme.red.opacity(0.4) : ChaosTheme.border,
+                                    lineWidth: 0.5
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     private var savedOverlay: some View {
         VStack {
             Text("\u{25C6} MEAL LOGGED")
-                .font(ChaosTheme.font(14))
+                .font(ChaosTheme.font(17))
                 .foregroundColor(ChaosTheme.inRange)
                 .tracking(4)
         }

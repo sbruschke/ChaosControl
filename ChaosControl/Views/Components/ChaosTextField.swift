@@ -24,20 +24,28 @@ struct ChaosInputField: View {
             // Field
             HStack {
                 TextField("", text: $value)
-                    .font(ChaosTheme.font(22))
+                    .font(ChaosTheme.font(26))
                     .foregroundColor(ChaosTheme.ink)
                     .tracking(1)
                     .keyboardType(.decimalPad)
 
                 if !unit.isEmpty {
                     Text(unit)
-                        .font(ChaosTheme.font(9))
+                        .font(ChaosTheme.font(12))
                         .foregroundColor(ChaosTheme.faded)
                         .tracking(2)
                 }
             }
             .padding(14)
-            .background(ChaosTheme.background.opacity(0.3))
+            .background(ChaosTheme.paperDark.opacity(0.5))
+            .overlay(alignment: .bottom) {
+                LinearGradient(
+                    colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(height: 1.5)
+            }
             .overlay(
                 Rectangle()
                     .stroke(

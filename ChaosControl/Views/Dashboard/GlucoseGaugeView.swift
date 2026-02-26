@@ -63,14 +63,14 @@ struct GlucoseGaugeView: View {
                     .tracking(2)
 
                 Text("MG/DL")
-                    .font(ChaosTheme.font(9))
+                    .font(ChaosTheme.font(12))
                     .foregroundColor(ChaosTheme.faded)
                     .tracking(3)
 
                 // Trend arrow
                 HStack(spacing: 4) {
                     Text(trend.arrow)
-                        .font(ChaosTheme.font(14))
+                        .font(ChaosTheme.font(17))
                         .foregroundColor(ChaosTheme.glucoseColor(for: value))
                 }
                 .padding(.top, 4)
@@ -153,22 +153,22 @@ struct GlucoseGaugeView: View {
     private var runicGlyphs: some View {
         ZStack {
             Text("\u{16A0}")
-                .font(.system(size: 6, design: .serif))
+                .font(.system(size: 8, design: .serif))
                 .foregroundColor(ChaosTheme.ink.opacity(0.2))
                 .offset(y: -(gaugeSize / 2 + 8))
 
             Text("\u{16B1}")
-                .font(.system(size: 6, design: .serif))
+                .font(.system(size: 8, design: .serif))
                 .foregroundColor(ChaosTheme.ink.opacity(0.15))
                 .offset(x: gaugeSize / 2 + 8)
 
             Text("\u{16D6}")
-                .font(.system(size: 6, design: .serif))
+                .font(.system(size: 8, design: .serif))
                 .foregroundColor(ChaosTheme.ink.opacity(0.15))
                 .offset(x: -(gaugeSize / 2 + 8))
 
             Text("\u{16C7}")
-                .font(.system(size: 6, design: .serif))
+                .font(.system(size: 8, design: .serif))
                 .foregroundColor(ChaosTheme.ink.opacity(0.15))
                 .offset(y: gaugeSize / 2 + 8)
         }
@@ -192,7 +192,7 @@ struct StatCard: View {
 
             HStack(alignment: .lastTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(ChaosTheme.font(18))
+                    .font(ChaosTheme.font(22))
                     .foregroundColor(valueColor)
                     .tracking(1)
 

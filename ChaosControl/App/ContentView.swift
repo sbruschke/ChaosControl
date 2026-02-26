@@ -9,7 +9,7 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             // Tab content
             TabView(selection: $selectedTab) {
-                DashboardView()
+                DashboardView(selectedTab: $selectedTab)
                     .tag(0)
 
                 GlucoseEntryView()
@@ -21,7 +21,7 @@ struct ContentView: View {
                 MealLogView()
                     .tag(3)
 
-                TrendsView()
+                TrendsView(selectedTab: $selectedTab)
                     .tag(4)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -64,15 +64,16 @@ struct ChaosTabBar: View {
                             .tracking(1.5)
                     }
                     .opacity(selectedTab == index ? 1 : 0.35)
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.top, 10)
-        .padding(.bottom, 28)
+        .padding(.top, 14)
+        .padding(.bottom, 32)
         .background(
-            ChaosTheme.background.opacity(0.95)
+            ChaosTheme.background
                 .shadow(color: .black.opacity(0.03), radius: 10, y: -5)
         )
         .overlay(alignment: .top) {

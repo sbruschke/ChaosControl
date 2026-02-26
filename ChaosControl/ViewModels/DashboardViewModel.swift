@@ -54,12 +54,12 @@ final class DashboardViewModel {
         isLoading = false
     }
 
-    func refreshDexcomData() async {
+    func refreshDexcomData(modelContext: ModelContext? = nil) async {
         guard await dexcomService.isAuthenticated else { return }
         isLoading = true
         do {
             let dtos = try await dexcomService.getGlucoseReadings(minutes: 1440, maxCount: 288)
-            // Convert DTOs to in-memory GlucoseReading objects for display
+            // Convert DTOs to GlucoseReading objects
             let readings = dtos.map {
                 GlucoseReading(value: $0.value, trend: $0.trend, timestamp: $0.timestamp, source: .dexcom)
             }
@@ -69,10 +69,31 @@ final class DashboardViewModel {
             recentReadings = Array(readings.prefix(12))
             timeInRange = InsulinCalculator.timeInRange(readings: readings)
             dexcomConnected = true
+
+            // Persist to SwiftData if modelContext provided (dedup by timestamp + source)
+            if let context = modelContext {
+                for reading in readings {
+                    let ts = reading.timestamp
+                    let predicate = #Predicate<GlucoseReading> { $0.timestamp == ts && $0.sourceRawValue == "DEXCOM" }
+                    let descriptor = FetchDescriptor<GlucoseReading>(predicate: predicate)
+                    if (try? context.fetch(descriptor))?.isEmpty ?? true {
+                        context.insert(reading)
+                    }
+                }
+                try? context.save()
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    func disconnectDexcom() {
+        KeychainService.clearAll()
+        dexcomConnected = false
+        currentReading = nil
+        recentReadings = []
+        errorMessage = nil
     }
 
     func startAutoRefresh(modelContext: ModelContext) {
@@ -81,7 +102,7 @@ final class DashboardViewModel {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(300))
                 guard !Task.isCancelled else { break }
-                await self?.refreshDexcomData()
+                await self?.refreshDexcomData(modelContext: modelContext)
                 self?.loadLocalData(modelContext: modelContext)
             }
         }
@@ -131,8 +152,8 @@ final class DashboardViewModel {
             activeInsulin = InsulinCalculator.calculateIOB(doses: doses)
         }
 
-        // Load manual readings if no Dexcom data
-        if currentReading == nil {
+        // Load local readings if Dexcom is not connected
+        if !dexcomConnected {
             let readingDescriptor = FetchDescriptor<GlucoseReading>(
                 sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
             )

@@ -42,7 +42,11 @@ struct GlucoseEntryView: View {
                 }
                 .padding(.horizontal, ChaosTheme.screenPadding)
                 .padding(.bottom, 20)
+                .onTapGesture {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
             }
+            .chaosKeyboardDismiss()
 
             // Annotations
             VStack {
@@ -112,24 +116,16 @@ struct GlucoseEntryView: View {
                 .frame(width: 3, height: 3)
 
             VStack(spacing: 6) {
-                HStack(spacing: 2) {
-                    TextField("", text: $viewModel.glucoseValue)
-                        .font(ChaosTheme.font(72))
-                        .foregroundColor(ChaosTheme.ink)
-                        .tracking(4)
-                        .multilineTextAlignment(.center)
-                        .keyboardType(.numberPad)
-                        .frame(maxWidth: 200)
-
-                    Rectangle()
-                        .fill(ChaosTheme.red.opacity(0.6))
-                        .frame(width: 2, height: 56)
-                        .opacity(viewModel.glucoseValue.isEmpty ? 1 : 0)
-                        .animation(.easeInOut(duration: 0.6).repeatForever(), value: viewModel.glucoseValue.isEmpty)
-                }
+                TextField("", text: $viewModel.glucoseValue)
+                    .font(ChaosTheme.font(80))
+                    .foregroundColor(ChaosTheme.ink)
+                    .tracking(4)
+                    .multilineTextAlignment(.center)
+                    .keyboardType(.numberPad)
+                    .frame(maxWidth: 200)
 
                 Text("MG / DL")
-                    .font(ChaosTheme.font(11))
+                    .font(ChaosTheme.font(14))
                     .foregroundColor(ChaosTheme.faded)
                     .tracking(4)
             }
@@ -254,8 +250,20 @@ struct GlucoseEntryView: View {
             Spacer()
 
             DatePicker("", selection: $viewModel.timestamp)
+                .datePickerStyle(.compact)
                 .labelsHidden()
                 .tint(ChaosTheme.red)
+                .padding(6)
+                .background(ChaosTheme.paperDark.opacity(0.5))
+                .overlay(
+                    Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5)
+                )
+                .overlay(alignment: .topLeading) {
+                    CornerBracket()
+                        .stroke(ChaosTheme.red, lineWidth: 0.5)
+                        .frame(width: 4, height: 4)
+                        .offset(x: -0.5, y: -0.5)
+                }
         }
         .padding(.vertical, 10)
         .overlay(alignment: .top) {
@@ -273,12 +281,20 @@ struct GlucoseEntryView: View {
             SectionHeader(title: "NOTES")
 
             TextField("ADD NOTES...", text: $viewModel.notes, axis: .vertical)
-                .font(ChaosTheme.font(9))
+                .font(ChaosTheme.font(12))
                 .foregroundColor(ChaosTheme.ink)
                 .tracking(1)
                 .lineLimit(3...6)
                 .padding(12)
-                .background(ChaosTheme.background.opacity(0.3))
+                .background(ChaosTheme.paperDark.opacity(0.5))
+                .overlay(alignment: .bottom) {
+                    LinearGradient(
+                        colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(height: 1.5)
+                }
                 .overlay(
                     Rectangle()
                         .stroke(ChaosTheme.ink.opacity(0.08), lineWidth: 0.5)
@@ -314,7 +330,7 @@ struct GlucoseEntryView: View {
     private var savedOverlay: some View {
         VStack {
             Text("\u{25C6} LOGGED")
-                .font(ChaosTheme.font(14))
+                .font(ChaosTheme.font(17))
                 .foregroundColor(ChaosTheme.inRange)
                 .tracking(4)
         }

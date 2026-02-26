@@ -3,8 +3,10 @@ import SwiftData
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel = DashboardViewModel()
     @State private var showingSettings = false
+    @Binding var selectedTab: Int
 
     var body: some View {
         ZStack {
@@ -73,8 +75,14 @@ struct DashboardView: View {
         .onDisappear {
             viewModel.stopAutoRefresh()
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                viewModel.loadData(modelContext: modelContext)
+                Task { await viewModel.refreshDexcomData(modelContext: modelContext) }
+            }
+        }
         .sheet(isPresented: $showingSettings) {
-            SettingsView()
+            SettingsView(dashboardViewModel: viewModel)
         }
     }
 
@@ -91,7 +99,7 @@ struct DashboardView: View {
 
             Button { showingSettings = true } label: {
                 Image(systemName: "gearshape")
-                    .font(.system(size: 14, weight: .light))
+                    .font(.system(size: 17, weight: .light))
                     .foregroundColor(ChaosTheme.ink.opacity(0.5))
             }
         }
@@ -100,17 +108,17 @@ struct DashboardView: View {
     private var dateLine: some View {
         HStack {
             Text(Date.now.formatted(.dateTime.day().month(.abbreviated).year()))
-                .font(ChaosTheme.font(9))
+                .font(ChaosTheme.font(12))
                 .foregroundColor(ChaosTheme.faded)
                 .tracking(2)
                 .textCase(.uppercase)
 
             Text("//")
-                .font(ChaosTheme.font(9))
+                .font(ChaosTheme.font(12))
                 .foregroundColor(ChaosTheme.red)
 
             Text(Date.now.formatted(.dateTime.hour().minute()))
-                .font(ChaosTheme.font(9))
+                .font(ChaosTheme.font(12))
                 .foregroundColor(ChaosTheme.faded)
                 .tracking(2)
 
@@ -133,18 +141,18 @@ struct DashboardView: View {
     private var statusSection: some View {
         VStack(spacing: 4) {
             Text("STATUS")
-                .font(ChaosTheme.font(9))
+                .font(ChaosTheme.font(12))
                 .foregroundColor(ChaosTheme.faded)
                 .tracking(3)
 
             if let reading = viewModel.currentReading {
                 Text(viewModel.statusText)
-                    .font(ChaosTheme.font(11))
+                    .font(ChaosTheme.font(14))
                     .foregroundColor(ChaosTheme.glucoseColor(for: reading.value))
                     .tracking(2)
             } else {
                 Text("AWAITING DATA")
-                    .font(ChaosTheme.font(11))
+                    .font(ChaosTheme.font(14))
                     .foregroundColor(ChaosTheme.faded)
                     .tracking(2)
             }
@@ -198,10 +206,10 @@ struct DashboardView: View {
             SectionHeader(title: "RECENT READINGS")
 
             if !viewModel.recentReadings.isEmpty {
-                SparklineView(readings: viewModel.recentReadings)
+                SparklineView(readings: Array(viewModel.recentReadings.prefix(5).reversed()))
 
                 HStack {
-                    ForEach(viewModel.recentReadings.suffix(5)) { reading in
+                    ForEach(viewModel.recentReadings.prefix(5)) { reading in
                         VStack(spacing: 2) {
                             Text("\(reading.mgDL)")
                                 .font(ChaosTheme.bodyFont)

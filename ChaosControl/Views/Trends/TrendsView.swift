@@ -5,6 +5,7 @@ import Charts
 struct TrendsView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = TrendsViewModel()
+    @Binding var selectedTab: Int
 
     var body: some View {
         ZStack {
@@ -61,6 +62,11 @@ struct TrendsView: View {
         .onAppear { viewModel.loadData(modelContext: modelContext) }
         .onChange(of: viewModel.selectedRange) { _, _ in
             viewModel.loadData(modelContext: modelContext)
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            if newTab == 4 {
+                viewModel.loadData(modelContext: modelContext)
+            }
         }
     }
 
@@ -217,7 +223,7 @@ struct TrendsView: View {
                 .foregroundColor(ChaosTheme.faded)
                 .tracking(2)
             Text(value)
-                .font(ChaosTheme.font(18))
+                .font(ChaosTheme.font(22))
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
@@ -244,7 +250,7 @@ struct TrendsView: View {
 
                     VStack(spacing: 2) {
                         Text("\(Int(viewModel.timeInRangePercent))")
-                            .font(ChaosTheme.font(18))
+                            .font(ChaosTheme.font(22))
                             .foregroundColor(ChaosTheme.ink)
                         Text("% IN RANGE")
                             .font(ChaosTheme.annotationFont)
@@ -296,7 +302,7 @@ struct TrendsView: View {
             Spacer()
 
             Text("\(Int(value))%")
-                .font(ChaosTheme.font(9))
+                .font(ChaosTheme.font(12))
                 .foregroundColor(highlight ? ChaosTheme.inRange : ChaosTheme.ink)
                 .tracking(1)
         }
@@ -317,7 +323,7 @@ struct TrendsView: View {
 
                 HStack(alignment: .lastTextBaseline, spacing: 2) {
                     Text(String(format: "%.1f", viewModel.estimatedA1C))
-                        .font(ChaosTheme.font(36))
+                        .font(ChaosTheme.font(42))
                         .foregroundColor(ChaosTheme.ink)
                         .tracking(2)
                     Text("%")
@@ -391,7 +397,7 @@ struct TrendsView: View {
                     .frame(height: 12)
 
                     Text("\(Int(day.average))")
-                        .font(ChaosTheme.font(9))
+                        .font(ChaosTheme.font(12))
                         .foregroundColor(ChaosTheme.ink)
                         .tracking(1)
                         .frame(width: 36, alignment: .trailing)

@@ -20,6 +20,10 @@ struct DoseCalculatorView: View {
                     inputSection
                         .padding(.bottom, 14)
 
+                    // Food search
+                    foodSearchSection
+                        .padding(.bottom, 14)
+
                     ChaosDivider()
                         .padding(.bottom, 10)
 
@@ -38,7 +42,11 @@ struct DoseCalculatorView: View {
                 }
                 .padding(.horizontal, ChaosTheme.screenPadding)
                 .padding(.bottom, 20)
+                .onTapGesture {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
             }
+            .chaosKeyboardDismiss()
 
             // Annotations
             VStack {
@@ -61,6 +69,9 @@ struct DoseCalculatorView: View {
         }
         .onChange(of: viewModel.currentGlucose) { _, _ in viewModel.calculate() }
         .onChange(of: viewModel.carbIntake) { _, _ in viewModel.calculate() }
+        .onChange(of: viewModel.foodSearchText) { _, _ in
+            viewModel.searchFoods(modelContext: modelContext)
+        }
         .overlay {
             if showSavedConfirmation {
                 savedOverlay
@@ -107,6 +118,108 @@ struct DoseCalculatorView: View {
                 unit: "GRAMS",
                 highlighted: true
             )
+        }
+    }
+
+    // MARK: - Food Search
+
+    private var foodSearchSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionHeader(title: "ADD CARBS FROM FOOD")
+
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 15))
+                    .foregroundColor(ChaosTheme.ink.opacity(0.3))
+
+                TextField("SEARCH FOODS...", text: $viewModel.foodSearchText)
+                    .font(ChaosTheme.bodyFont)
+                    .foregroundColor(ChaosTheme.ink)
+                    .textInputAutocapitalization(.characters)
+                    .tracking(1)
+            }
+            .padding(10)
+            .background(ChaosTheme.paperDark.opacity(0.5))
+            .overlay(alignment: .bottom) {
+                LinearGradient(
+                    colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(height: 1.5)
+            }
+            .overlay(
+                Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5)
+            )
+
+            // Search results
+            if !viewModel.searchResults.isEmpty {
+                ForEach(viewModel.searchResults) { food in
+                    Button {
+                        viewModel.addFoodCarbs(food)
+                    } label: {
+                        HStack {
+                            Text("+")
+                                .font(ChaosTheme.font(15))
+                                .foregroundColor(ChaosTheme.faded)
+                                .frame(width: 22, height: 22)
+                                .overlay(
+                                    Rectangle().stroke(ChaosTheme.ink.opacity(0.15), lineWidth: 0.5)
+                                )
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(food.name)
+                                    .font(ChaosTheme.font(12))
+                                    .foregroundColor(ChaosTheme.ink)
+                                    .tracking(1)
+                                Text("\(Int(food.carbsPerServing))g CARB // \(food.defaultServingSize)")
+                                    .font(ChaosTheme.microFont)
+                                    .foregroundColor(ChaosTheme.faded)
+                                    .tracking(1)
+                            }
+
+                            Spacer()
+                        }
+                        .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else if viewModel.foodSearchText.isEmpty && !viewModel.recentFoods.isEmpty {
+                // Show recent foods
+                Text("RECENT FOODS")
+                    .font(ChaosTheme.microFont)
+                    .foregroundColor(ChaosTheme.faded)
+                    .tracking(2)
+
+                ForEach(viewModel.recentFoods) { food in
+                    Button {
+                        viewModel.addFoodCarbs(food)
+                    } label: {
+                        HStack {
+                            Text("+")
+                                .font(ChaosTheme.font(15))
+                                .foregroundColor(ChaosTheme.faded)
+                                .frame(width: 22, height: 22)
+                                .overlay(
+                                    Rectangle().stroke(ChaosTheme.ink.opacity(0.15), lineWidth: 0.5)
+                                )
+
+                            Text(food.name)
+                                .font(ChaosTheme.font(12))
+                                .foregroundColor(ChaosTheme.ink)
+                                .tracking(1)
+
+                            Spacer()
+
+                            Text("\(Int(food.carbsPerServing))g")
+                                .font(ChaosTheme.microFont)
+                                .foregroundColor(ChaosTheme.faded)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
 
@@ -180,7 +293,7 @@ struct DoseCalculatorView: View {
 
             HStack(alignment: .lastTextBaseline, spacing: 2) {
                 Text(String(format: "%.1f", value))
-                    .font(ChaosTheme.font(16))
+                    .font(ChaosTheme.font(20))
                     .foregroundColor(ChaosTheme.ink)
                     .tracking(1)
                 Text(unit)
@@ -193,7 +306,7 @@ struct DoseCalculatorView: View {
 
     private func doseOperator(_ op: String) -> some View {
         Text(op)
-            .font(ChaosTheme.font(14))
+            .font(ChaosTheme.font(17))
             .foregroundColor(ChaosTheme.red.opacity(0.4))
     }
 
@@ -205,12 +318,12 @@ struct DoseCalculatorView: View {
                 .tracking(3)
 
             Text(String(format: "%.1f", total))
-                .font(ChaosTheme.font(48))
+                .font(ChaosTheme.font(54))
                 .foregroundColor(ChaosTheme.ink)
                 .tracking(2)
 
             Text("UNITS")
-                .font(ChaosTheme.font(12))
+                .font(ChaosTheme.font(15))
                 .foregroundColor(ChaosTheme.faded)
                 .tracking(3)
         }
@@ -230,7 +343,7 @@ struct DoseCalculatorView: View {
     private var savedOverlay: some View {
         VStack {
             Text("\u{25C6} DOSE LOGGED")
-                .font(ChaosTheme.font(14))
+                .font(ChaosTheme.font(17))
                 .foregroundColor(ChaosTheme.inRange)
                 .tracking(4)
         }
