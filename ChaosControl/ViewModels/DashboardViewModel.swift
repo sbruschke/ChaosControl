@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
-import Combine
+import SwiftUI
+import Observation
 
 @Observable
 final class DashboardViewModel {
@@ -57,14 +58,16 @@ final class DashboardViewModel {
         guard await dexcomService.isAuthenticated else { return }
         isLoading = true
         do {
-            let readings = try await dexcomService.getGlucoseReadings(minutes: 1440, maxCount: 288)
+            let dtos = try await dexcomService.getGlucoseReadings(minutes: 1440, maxCount: 288)
+            // Convert DTOs to in-memory GlucoseReading objects for display
+            let readings = dtos.map {
+                GlucoseReading(value: $0.value, trend: $0.trend, timestamp: $0.timestamp, source: .dexcom)
+            }
             if let latest = readings.first {
                 currentReading = latest
             }
             recentReadings = Array(readings.prefix(12))
-
-            let last24h = readings
-            timeInRange = InsulinCalculator.timeInRange(readings: last24h)
+            timeInRange = InsulinCalculator.timeInRange(readings: readings)
             dexcomConnected = true
         } catch {
             errorMessage = error.localizedDescription

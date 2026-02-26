@@ -54,6 +54,14 @@ struct DexcomGlucoseResponse: Decodable {
     let Trend: String
 }
 
+/// Lightweight data transfer object for glucose data from the Dexcom API.
+/// Kept separate from the SwiftData @Model so the service can operate without a ModelContext.
+struct DexcomGlucoseDTO: Sendable {
+    let value: Double
+    let trend: TrendDirection
+    let timestamp: Date
+}
+
 actor DexcomShareService {
     private let region: DexcomRegion
     private let session = URLSession.shared
@@ -85,7 +93,7 @@ actor DexcomShareService {
     }
 
     /// Get glucose readings from the last N minutes (max 1440 = 24 hours)
-    func getGlucoseReadings(minutes: Int = 1440, maxCount: Int = 288) async throws -> [GlucoseReading] {
+    func getGlucoseReadings(minutes: Int = 1440, maxCount: Int = 288) async throws -> [DexcomGlucoseDTO] {
         guard let sessionId, sessionId != defaultUUID else {
             throw DexcomError.sessionExpired
         }
@@ -106,13 +114,13 @@ actor DexcomShareService {
     }
 
     /// Get the latest glucose reading (last 24 hours)
-    func getLatestReading() async throws -> GlucoseReading? {
+    func getLatestReading() async throws -> DexcomGlucoseDTO? {
         let readings = try await getGlucoseReadings(minutes: 1440, maxCount: 1)
         return readings.first
     }
 
     /// Get the current glucose reading (last 10 minutes)
-    func getCurrentReading() async throws -> GlucoseReading? {
+    func getCurrentReading() async throws -> DexcomGlucoseDTO? {
         let readings = try await getGlucoseReadings(minutes: 10, maxCount: 1)
         return readings.first
     }
@@ -164,7 +172,7 @@ actor DexcomShareService {
         return cleaned
     }
 
-    private func fetchGlucoseReadings(sessionId: String, minutes: Int, maxCount: Int) async throws -> [GlucoseReading] {
+    private func fetchGlucoseReadings(sessionId: String, minutes: Int, maxCount: Int) async throws -> [DexcomGlucoseDTO] {
         var components = URLComponents(string: "\(region.baseURL)Publisher/ReadPublisherLatestGlucoseValues")!
         components.queryItems = [
             URLQueryItem(name: "sessionId", value: sessionId),
@@ -207,11 +215,10 @@ actor DexcomShareService {
             let timestamp = parseDexcomDate(response.DT) ?? Date()
             let trend = TrendDirection(dexcomString: response.Trend)
 
-            return GlucoseReading(
+            return DexcomGlucoseDTO(
                 value: Double(response.Value),
                 trend: trend,
-                timestamp: timestamp,
-                source: .dexcom
+                timestamp: timestamp
             )
         }
     }
@@ -251,7 +258,7 @@ actor DexcomShareService {
             return try JSONDecoder().decode(T.self, from: data)
         } catch let error as DexcomError {
             throw error
-        } catch let error as DecodingError {
+        } catch is DecodingError {
             throw DexcomError.invalidResponse
         } catch {
             throw DexcomError.networkError(error)

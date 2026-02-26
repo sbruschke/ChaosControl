@@ -44,7 +44,14 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             DEVELOPMENT_TEAM="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES | xcpretty || true
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            2>&1 | tee build.log
+
+          # Fail if build actually failed
+          if grep -q "BUILD FAILED" build.log; then
+            echo "::error::Build failed. See log above."
+            exit 1
+          fi
 
       - name: Package IPA
         run: |

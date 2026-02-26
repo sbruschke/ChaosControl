@@ -1,5 +1,7 @@
 import Foundation
+import SwiftUI
 import SwiftData
+import Observation
 
 @Observable
 final class GlucoseEntryViewModel {
@@ -23,7 +25,7 @@ final class GlucoseEntryViewModel {
         return ChaosTheme.glucoseStatus(for: value)
     }
 
-    var rangeColor: some Any {
+    var rangeColor: Color {
         guard let value = glucoseDouble else { return ChaosTheme.faded }
         return ChaosTheme.glucoseColor(for: value)
     }

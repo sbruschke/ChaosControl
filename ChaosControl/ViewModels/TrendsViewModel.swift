@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import Observation
 
 enum TimeRange: String, CaseIterable {
     case day = "24H"
