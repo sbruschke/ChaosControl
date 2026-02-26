@@ -107,7 +107,7 @@ final class MealLogViewModel {
         var categories = DefaultFoodCategory.defaultNames
         let descriptor = FetchDescriptor<UserSettings>()
         if let settings = try? modelContext.fetch(descriptor).first {
-            categories.append(contentsOf: settings.customCategories)
+            categories.append(contentsOf: settings.customCategories ?? [])
         }
         allCategories = categories
     }

@@ -372,7 +372,7 @@ struct MealLogView: View {
                                     .font(ChaosTheme.font(12))
                                     .foregroundColor(ChaosTheme.ink)
                                     .tracking(1)
-                                Text("\(Int(food.carbsPerServing))g CARB // \(food.category)")
+                                Text("\(Int(food.carbsPerServing))g CARB // \(food.category ?? "UNCATEGORIZED")")
                                     .font(ChaosTheme.microFont)
                                     .foregroundColor(ChaosTheme.faded)
                                     .tracking(1)

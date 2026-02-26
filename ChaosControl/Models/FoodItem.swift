@@ -12,7 +12,7 @@ final class FoodItem {
     var fiberPerServing: Double
     var caloriesPerServing: Double
     var defaultServingSize: String
-    var category: String
+    var category: String?
     var isFavorite: Bool
     var lastUsed: Date?
     var useCount: Int
@@ -25,7 +25,7 @@ final class FoodItem {
         fiberPerServing: Double = 0,
         caloriesPerServing: Double = 0,
         defaultServingSize: String = "1 serving",
-        category: String = "UNCATEGORIZED",
+        category: String? = nil,
         isFavorite: Bool = false,
         lastUsed: Date? = nil,
         useCount: Int = 0

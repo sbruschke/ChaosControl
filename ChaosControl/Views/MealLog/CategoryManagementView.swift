@@ -11,7 +11,7 @@ struct CategoryManagementView: View {
     private var settings: UserSettings? { allSettings.first }
 
     private var customCategories: [String] {
-        settings?.customCategories ?? []
+        settings?.customCategories ?? [] as [String]
     }
 
     var body: some View {
@@ -146,14 +146,18 @@ struct CategoryManagementView: View {
         let name = newCategoryName.trimmingCharacters(in: .whitespaces).uppercased()
         guard !name.isEmpty else { return }
         guard !DefaultFoodCategory.defaultNames.contains(name) else { return }
-        guard !(settings?.customCategories.contains(name) ?? false) else { return }
+        guard !(settings?.customCategories?.contains(name) ?? false) else { return }
 
-        settings?.customCategories.append(name)
+        if settings?.customCategories == nil {
+            settings?.customCategories = [name]
+        } else {
+            settings?.customCategories?.append(name)
+        }
         newCategoryName = ""
     }
 
     private func deleteCategory(_ name: String) {
-        settings?.customCategories.removeAll { $0 == name }
+        settings?.customCategories?.removeAll { $0 == name }
 
         // Reassign foods in this category to UNCATEGORIZED
         let predicate = #Predicate<FoodItem> { $0.category == name }

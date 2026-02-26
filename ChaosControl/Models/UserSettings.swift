@@ -36,7 +36,7 @@ final class UserSettings {
     var preferredUnit: String
 
     /// Custom food categories added by the user
-    var customCategories: [String]
+    var customCategories: [String]?
 
     init(
         carbRatio: Double = 10,
@@ -49,7 +49,7 @@ final class UserSettings {
         dexcomRegion: String = "us",
         dexcomRefreshInterval: Double = 300,
         preferredUnit: String = "mgdl",
-        customCategories: [String] = []
+        customCategories: [String]? = nil
     ) {
         self.carbRatio = carbRatio
         self.sensitivityFactor = sensitivityFactor
