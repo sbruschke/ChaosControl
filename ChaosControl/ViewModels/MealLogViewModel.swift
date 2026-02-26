@@ -74,7 +74,8 @@ final class MealLogViewModel {
 
         // Save new foods to favorites database
         for item in currentItems {
-            let predicate = #Predicate<FoodItem> { $0.name == item.name }
+            let itemName = item.name
+            let predicate = #Predicate<FoodItem> { $0.name == itemName }
             let descriptor = FetchDescriptor<FoodItem>(predicate: predicate)
             if (try? modelContext.fetch(descriptor))?.isEmpty ?? true {
                 let foodItem = FoodItem(
