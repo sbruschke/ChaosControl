@@ -61,9 +61,6 @@ struct SettingsView: View {
                         }
                     }
                     .padding(ChaosTheme.screenPadding)
-                    .onTapGesture {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    }
                 }
             }
             .navigationBarTitleDisplayMode(.inline)

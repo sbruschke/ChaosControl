@@ -153,27 +153,10 @@ extension View {
     }
 
     func chaosKeyboardDismiss() -> some View {
-        modifier(ChaosKeyboardDismiss())
+        self.scrollDismissesKeyboard(.interactively)
     }
-}
 
-// MARK: - Keyboard Dismiss Modifier
-
-struct ChaosKeyboardDismiss: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    } label: {
-                        Text("DONE")
-                            .font(ChaosTheme.captionFont)
-                            .foregroundColor(ChaosTheme.red)
-                            .tracking(2)
-                    }
-                }
-            }
+    func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
