@@ -1,0 +1,20 @@
+{
+  "name": "Chaos Control",
+  "identifier": "com.chaoscontrol.source",
+  "sourceURL": "https://raw.githubusercontent.com/sbruschke/ChaosControl/main/altstore-source.json",
+  "apps": [
+    {
+      "name": "Chaos Control",
+      "bundleIdentifier": "com.chaoscontrol.app",
+      "developerName": "sbruschke",
+      "version": "0.1.0",
+      "versionDate": "2026-03-04T00:00:00-00:00",
+      "versionDescription": "Build #11",
+      "downloadURL": "https://github.com/sbruschke/ChaosControl/releases/latest/download/ChaosControl.ipa",
+      "localizedDescription": "Insulin management app for iOS.",
+      "iconURL": "",
+      "size": 435568
+    }
+  ],
+  "news": []
+}

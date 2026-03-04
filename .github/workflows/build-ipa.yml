@@ -80,6 +80,50 @@ jobs:
           path: ChaosControl.ipa
           retention-days: 90
 
+      - name: Update AltStore source JSON
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+        run: |
+          IPA_SIZE=$(stat -f%z ChaosControl.ipa 2>/dev/null || stat -c%s ChaosControl.ipa)
+          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%S+00:00")
+          BUILD_NUM="${{ github.run_number }}"
+
+          cat > altstore-source.json << ENDJSON
+          {
+            "name": "Chaos Control",
+            "identifier": "com.chaoscontrol.source",
+            "sourceURL": "https://raw.githubusercontent.com/sbruschke/ChaosControl/main/altstore-source.json",
+            "apps": [
+              {
+                "name": "Chaos Control",
+                "bundleIdentifier": "com.chaoscontrol.app",
+                "developerName": "sbruschke",
+                "version": "0.1.${BUILD_NUM}",
+                "versionDate": "${BUILD_DATE}",
+                "versionDescription": "Build #${BUILD_NUM}",
+                "downloadURL": "https://github.com/sbruschke/ChaosControl/releases/latest/download/ChaosControl.ipa",
+                "localizedDescription": "Insulin management app for iOS.",
+                "iconURL": "",
+                "size": ${IPA_SIZE}
+              }
+            ],
+            "news": []
+          }
+          ENDJSON
+
+          # Remove leading whitespace from heredoc
+          python3 -c "
+          import json, sys
+          with open('altstore-source.json') as f:
+              data = json.load(f)
+          with open('altstore-source.json', 'w') as f:
+              json.dump(data, f, indent=2)
+          "
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add altstore-source.json
+          git diff --cached --quiet || git commit -m "Update AltStore source [skip ci]" && git push
+
       - name: Create Release (on push to master/main)
         if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
         uses: softprops/action-gh-release@v2
@@ -90,6 +134,8 @@ jobs:
             Automated build from commit ${{ github.sha }}
 
             **Download the IPA below and install via LiveContainer.**
+
+            **LiveContainer source:** `https://raw.githubusercontent.com/sbruschke/ChaosControl/main/altstore-source.json`
           files: ChaosControl.ipa
           draft: false
           prerelease: false
