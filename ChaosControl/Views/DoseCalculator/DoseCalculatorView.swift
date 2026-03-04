@@ -5,6 +5,7 @@ struct DoseCalculatorView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = DoseCalculatorViewModel()
     @State private var showSavedConfirmation = false
+    @Binding var selectedTab: Int
 
     var body: some View {
         NavigationStack {
@@ -141,7 +142,8 @@ struct DoseCalculatorView: View {
                             .cornerRadius(8)
 
                             ChaosButton(title: "Confirm & Log Dose") {
-                                if let _ = viewModel.saveDose(modelContext: modelContext) {
+                                if let dose = viewModel.saveDose(modelContext: modelContext) {
+                                    appLog("Dose logged: \(dose.totalUnits)u (meal=\(dose.mealUnits), corr=\(dose.correctionUnits), iob=\(dose.iobDeducted))", category: "DATA")
                                     showSavedConfirmation = true
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                                         showSavedConfirmation = false
@@ -164,7 +166,16 @@ struct DoseCalculatorView: View {
             .navigationTitle("Dose Calculator")
         }
         .onAppear {
+            appLog("Dose calculator appeared — loading settings", category: "NAV")
             viewModel.loadSettings(modelContext: modelContext)
+            viewModel.calculate()
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            if newTab == 2 {
+                appLog("Dose tab selected — reloading settings (ICR=\(viewModel.carbRatio), ISF=\(viewModel.sensitivityFactor))", category: "NAV")
+                viewModel.loadSettings(modelContext: modelContext)
+                viewModel.calculate()
+            }
         }
         .onChange(of: viewModel.currentGlucose) { _, _ in viewModel.calculate() }
         .onChange(of: viewModel.carbIntake) { _, _ in viewModel.calculate() }

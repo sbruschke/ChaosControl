@@ -180,6 +180,7 @@ struct SettingsView: View {
     }
 
     private func save() {
+        appLog("Settings save: ICR=\(carbRatio), ISF=\(sensitivityFactor), target=\(targetGlucose), actionDur=\(insulinActionDuration)", category: "DATA")
         if let s = settings {
             s.carbRatio = carbRatio
             s.sensitivityFactor = sensitivityFactor

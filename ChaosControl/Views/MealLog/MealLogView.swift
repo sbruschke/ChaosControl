@@ -6,6 +6,7 @@ struct MealLogView: View {
     @State private var viewModel = MealLogViewModel()
     @State private var recentFoods: [FoodItem] = []
     @State private var showSavedConfirmation = false
+    @Binding var selectedTab: Int
 
     var body: some View {
         NavigationStack {
@@ -146,13 +147,17 @@ struct MealLogView: View {
                     // Log meal button
                     if !viewModel.currentItems.isEmpty {
                         ChaosButton(title: "Log Meal & Calculate Dose") {
-                            if let _ = viewModel.saveMeal(modelContext: modelContext) {
+                            appLog("Attempting to save meal: \(viewModel.currentItems.count) items, \(viewModel.totalCarbs)g carbs", category: "DATA")
+                            if let meal = viewModel.saveMeal(modelContext: modelContext) {
+                                appLog("Meal saved: \(meal.totalCarbs)g carbs, \(meal.items.count) items", category: "DATA")
                                 showSavedConfirmation = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                                     showSavedConfirmation = false
                                     viewModel.reset()
                                     recentFoods = viewModel.loadRecentFoods(modelContext: modelContext)
                                 }
+                            } else {
+                                appLog("Meal save returned nil — empty items?", category: "WARN")
                             }
                         }
                     }
@@ -175,6 +180,12 @@ struct MealLogView: View {
             recentFoods = viewModel.loadRecentFoods(modelContext: modelContext)
             viewModel.loadCategories(modelContext: modelContext)
             autoSelectMealType()
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            if newTab == 3 {
+                recentFoods = viewModel.loadRecentFoods(modelContext: modelContext)
+                viewModel.loadCategories(modelContext: modelContext)
+            }
         }
         .sheet(isPresented: $viewModel.showingAddItem) {
             addItemSheet

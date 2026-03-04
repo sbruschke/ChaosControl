@@ -11,19 +11,19 @@ struct ContentView: View {
                 }
                 .tag(0)
 
-            GlucoseEntryView()
+            GlucoseEntryView(selectedTab: $selectedTab)
                 .tabItem {
                     Label("Log", systemImage: "plus.circle")
                 }
                 .tag(1)
 
-            DoseCalculatorView()
+            DoseCalculatorView(selectedTab: $selectedTab)
                 .tabItem {
                     Label("Dose", systemImage: "triangle")
                 }
                 .tag(2)
 
-            MealLogView()
+            MealLogView(selectedTab: $selectedTab)
                 .tabItem {
                     Label("Meals", systemImage: "square.grid.2x2")
                 }

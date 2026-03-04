@@ -32,9 +32,9 @@ struct DashboardView: View {
 
                     // Quick actions
                     HStack(spacing: 8) {
-                        QuickActionButton(title: "+ Glucose") { }
-                        QuickActionButton(title: "+ Meal") { }
-                        QuickActionButton(title: "Calc Dose") { }
+                        QuickActionButton(title: "+ Glucose") { selectedTab = 1 }
+                        QuickActionButton(title: "+ Meal") { selectedTab = 3 }
+                        QuickActionButton(title: "Calc Dose") { selectedTab = 2 }
                     }
 
                     // Stat cards
@@ -104,6 +104,7 @@ struct DashboardView: View {
             }
         }
         .onAppear {
+            appLog("Dashboard appeared", category: "NAV")
             viewModel.loadData(modelContext: modelContext)
             Task { await viewModel.tryAutoConnect() }
             viewModel.startAutoRefresh(modelContext: modelContext)
@@ -111,8 +112,15 @@ struct DashboardView: View {
         .onDisappear {
             viewModel.stopAutoRefresh()
         }
+        .onChange(of: selectedTab) { _, newTab in
+            if newTab == 0 {
+                appLog("Dashboard tab selected — reloading data", category: "NAV")
+                viewModel.loadData(modelContext: modelContext)
+            }
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                appLog("Scene became active — reloading dashboard", category: "NAV")
                 viewModel.loadData(modelContext: modelContext)
                 Task { await viewModel.refreshDexcomData(modelContext: modelContext) }
             }

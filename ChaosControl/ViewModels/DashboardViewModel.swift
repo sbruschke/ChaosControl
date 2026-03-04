@@ -152,16 +152,20 @@ final class DashboardViewModel {
             activeInsulin = InsulinCalculator.calculateIOB(doses: doses)
         }
 
-        // Load local readings if Dexcom is not connected
-        if !dexcomConnected {
-            let readingDescriptor = FetchDescriptor<GlucoseReading>(
-                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-            )
-            if let readings = try? modelContext.fetch(readingDescriptor) {
+        // Load local readings (always — so manual entries show even when Dexcom is connected)
+        let readingDescriptor = FetchDescriptor<GlucoseReading>(
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        if let readings = try? modelContext.fetch(readingDescriptor) {
+            // If Dexcom is connected, only override if no Dexcom data yet
+            if !dexcomConnected || currentReading == nil {
                 currentReading = readings.first
-                recentReadings = Array(readings.prefix(12))
-                timeInRange = InsulinCalculator.timeInRange(readings: readings)
             }
+            recentReadings = Array(readings.prefix(12))
+            timeInRange = InsulinCalculator.timeInRange(readings: readings)
+            appLog("loadLocalData: \(readings.count) total readings, showing \(recentReadings.count) recent, latest=\(readings.first?.mgDL ?? 0) mg/dL", category: "DATA")
+        } else {
+            appLog("loadLocalData: no readings found", category: "DATA")
         }
     }
 }

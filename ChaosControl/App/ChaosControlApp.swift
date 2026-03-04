@@ -49,6 +49,9 @@ struct ChaosControlApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    AppLogger.shared.pruneOldLogs()
+                }
         }
         .modelContainer(sharedModelContainer)
     }

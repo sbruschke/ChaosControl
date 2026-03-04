@@ -56,13 +56,25 @@ final class MealLogViewModel {
         guard !currentItems.isEmpty else { return nil }
         isSaving = true
 
+        appLog("saveMeal: \(currentItems.count) items, type=\(selectedMealType.rawValue)", category: "DATA")
+
+        // Create meal without items first, then establish relationships
+        // after inserting everything into the context to avoid SwiftData crash
         let meal = Meal(
             mealType: selectedMealType,
             name: mealName.isEmpty ? nil : mealName.uppercased(),
-            items: currentItems
+            items: []
         )
-
         modelContext.insert(meal)
+
+        // Insert each MealItem into context and attach to meal
+        for item in currentItems {
+            modelContext.insert(item)
+            item.meal = meal
+        }
+        meal.items = currentItems
+
+        appLog("saveMeal: meal inserted with \(meal.items.count) items", category: "DATA")
 
         // Save new foods to favorites database
         for item in currentItems {
@@ -79,7 +91,16 @@ final class MealLogViewModel {
                     useCount: 1
                 )
                 modelContext.insert(foodItem)
+                appLog("saveMeal: new food saved to favorites: \(item.name)", category: "DATA")
             }
+        }
+
+        // Explicit save to catch any errors
+        do {
+            try modelContext.save()
+            appLog("saveMeal: context saved successfully", category: "DATA")
+        } catch {
+            appLog("saveMeal: context save ERROR — \(error.localizedDescription)", category: "ERROR")
         }
 
         isSaving = false

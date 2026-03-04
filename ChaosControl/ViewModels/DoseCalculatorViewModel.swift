@@ -37,6 +37,9 @@ final class DoseCalculatorViewModel {
             carbRatio = settings.carbRatio
             sensitivityFactor = settings.sensitivityFactor
             targetGlucose = settings.targetGlucose
+            appLog("loadSettings: ICR=\(carbRatio), ISF=\(sensitivityFactor), target=\(targetGlucose)", category: "DATA")
+        } else {
+            appLog("loadSettings: no UserSettings found, using defaults", category: "WARN")
         }
 
         // Calculate current IOB

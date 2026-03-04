@@ -5,6 +5,7 @@ struct GlucoseEntryView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = GlucoseEntryViewModel()
     @State private var showSavedConfirmation = false
+    @Binding var selectedTab: Int
 
     var body: some View {
         NavigationStack {
@@ -94,18 +95,23 @@ struct GlucoseEntryView: View {
                     // Buttons
                     VStack(spacing: 10) {
                         ChaosButton(title: "Log Reading") {
-                            if let _ = viewModel.save(modelContext: modelContext) {
+                            if let reading = viewModel.save(modelContext: modelContext) {
+                                appLog("Glucose reading saved: \(reading.mgDL) mg/dL", category: "DATA")
                                 showSavedConfirmation = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                                     showSavedConfirmation = false
                                     viewModel.reset()
                                 }
+                            } else {
+                                appLog("Glucose save failed — validation error", category: "WARN")
                             }
                         }
 
                         ChaosSecondaryButton(title: "Log & Calculate Dose") {
-                            if let _ = viewModel.save(modelContext: modelContext) {
+                            if let reading = viewModel.save(modelContext: modelContext) {
+                                appLog("Glucose saved, navigating to dose: \(reading.mgDL) mg/dL", category: "DATA")
                                 viewModel.reset()
+                                selectedTab = 2
                             }
                         }
                     }
