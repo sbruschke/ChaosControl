@@ -106,7 +106,7 @@ struct DashboardView: View {
         .onAppear {
             appLog("Dashboard appeared", category: "NAV")
             viewModel.loadData(modelContext: modelContext)
-            Task { await viewModel.tryAutoConnect() }
+            Task { await viewModel.tryAutoConnect(modelContext: modelContext) }
             viewModel.startAutoRefresh(modelContext: modelContext)
         }
         .onDisappear {

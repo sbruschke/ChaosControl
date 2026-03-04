@@ -32,8 +32,8 @@ struct TrendsView: View {
                         } else {
                             Chart {
                                 RectangleMark(
-                                    xStart: .value("Start", viewModel.readings.first?.timestamp ?? .now),
-                                    xEnd: .value("End", viewModel.readings.last?.timestamp ?? .now),
+                                    xStart: .value("Start", viewModel.cutoffDate),
+                                    xEnd: .value("End", Date.now),
                                     yStart: .value("Low", 70),
                                     yEnd: .value("High", 180)
                                 )
@@ -63,6 +63,7 @@ struct TrendsView: View {
                                     .foregroundStyle(.green.opacity(0.3))
                                     .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
                             }
+                            .chartXScale(domain: viewModel.cutoffDate...Date.now)
                             .frame(height: 180)
                         }
                     }

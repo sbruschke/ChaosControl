@@ -47,10 +47,14 @@ final class TrendsViewModel {
     var timeInRangePercent: Double = 0
     var isLoading = false
 
+    var cutoffDate: Date {
+        Date.now.addingTimeInterval(-Double(selectedRange.days) * 86400)
+    }
+
     func loadData(modelContext: ModelContext) {
         isLoading = true
 
-        let cutoff = Date.now.addingTimeInterval(-Double(selectedRange.days) * 86400)
+        let cutoff = cutoffDate
         let predicate = #Predicate<GlucoseReading> { $0.timestamp >= cutoff }
         let descriptor = FetchDescriptor<GlucoseReading>(
             predicate: predicate,

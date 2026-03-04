@@ -151,7 +151,8 @@ struct MealLogView: View {
                             if let meal = viewModel.saveMeal(modelContext: modelContext) {
                                 appLog("Meal saved: \(meal.totalCarbs)g carbs, \(meal.items.count) items", category: "DATA")
                                 showSavedConfirmation = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                Task {
+                                    try? await Task.sleep(for: .seconds(1.5))
                                     showSavedConfirmation = false
                                     viewModel.reset()
                                     recentFoods = viewModel.loadRecentFoods(modelContext: modelContext)

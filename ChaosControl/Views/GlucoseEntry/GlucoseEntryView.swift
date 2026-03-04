@@ -97,8 +97,15 @@ struct GlucoseEntryView: View {
                         ChaosButton(title: "Log Reading") {
                             if let reading = viewModel.save(modelContext: modelContext) {
                                 appLog("Glucose reading saved: \(reading.mgDL) mg/dL", category: "DATA")
+                                DatabaseExporter.shared.exportReading(
+                                    value: reading.value,
+                                    trend: reading.trend.description,
+                                    context: reading.context?.rawValue,
+                                    source: reading.source.rawValue
+                                )
                                 showSavedConfirmation = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                Task {
+                                    try? await Task.sleep(for: .seconds(1.5))
                                     showSavedConfirmation = false
                                     viewModel.reset()
                                 }
@@ -110,6 +117,12 @@ struct GlucoseEntryView: View {
                         ChaosSecondaryButton(title: "Log & Calculate Dose") {
                             if let reading = viewModel.save(modelContext: modelContext) {
                                 appLog("Glucose saved, navigating to dose: \(reading.mgDL) mg/dL", category: "DATA")
+                                DatabaseExporter.shared.exportReading(
+                                    value: reading.value,
+                                    trend: reading.trend.description,
+                                    context: reading.context?.rawValue,
+                                    source: reading.source.rawValue
+                                )
                                 viewModel.reset()
                                 selectedTab = 2
                             }

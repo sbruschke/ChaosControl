@@ -201,6 +201,15 @@ struct SettingsView: View {
             )
             modelContext.insert(newSettings)
         }
+
+        DatabaseExporter.shared.exportSettings(
+            icr: carbRatio,
+            isf: sensitivityFactor,
+            target: targetGlucose,
+            actionDuration: insulinActionDuration,
+            lowThreshold: lowThreshold,
+            highThreshold: highThreshold
+        )
     }
 
     private func connectDexcom() async {

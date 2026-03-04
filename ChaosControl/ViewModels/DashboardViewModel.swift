@@ -113,16 +113,22 @@ final class DashboardViewModel {
         refreshTask = nil
     }
 
-    func tryAutoConnect() async {
-        guard KeychainService.hasCredentials else { return }
+    func tryAutoConnect(modelContext: ModelContext) async {
+        guard KeychainService.hasCredentials else {
+            appLog("tryAutoConnect: no credentials stored", category: "DATA")
+            return
+        }
         do {
             let username = try KeychainService.getUsername()
+            appLog("tryAutoConnect: attempting Dexcom auth for \(username)", category: "DATA")
             let password = try KeychainService.getPassword()
             try await dexcomService.authenticate(username: username, password: password)
             dexcomConnected = true
-            await refreshDexcomData()
+            appLog("tryAutoConnect: authenticated, fetching readings", category: "DATA")
+            await refreshDexcomData(modelContext: modelContext)
+            loadLocalData(modelContext: modelContext)
         } catch {
-            // Silently fail - user can reconnect manually
+            appLog("tryAutoConnect: failed — \(error.localizedDescription)", category: "WARN")
         }
     }
 

@@ -2,10 +2,19 @@ import Foundation
 import SwiftData
 import Observation
 
+/// Plain struct for in-progress meal items (NOT a SwiftData @Model).
+/// MealItem @Model objects are only created at save time to avoid SwiftData lifecycle crashes.
+struct TempMealItem: Identifiable {
+    let id = UUID()
+    var name: String
+    var carbs: Double
+    var servingSize: String
+}
+
 @Observable
 final class MealLogViewModel {
     var selectedMealType: MealType = .midday
-    var currentItems: [MealItem] = []
+    var currentItems: [TempMealItem] = []
     var searchText: String = ""
     var isSaving = false
     var mealName: String = ""
@@ -26,7 +35,7 @@ final class MealLogViewModel {
 
     func addItem() {
         guard !newItemName.isEmpty else { return }
-        let item = MealItem(
+        let item = TempMealItem(
             name: newItemName.uppercased(),
             carbs: newItemCarbs,
             servingSize: newItemServing
@@ -36,7 +45,7 @@ final class MealLogViewModel {
     }
 
     func addFromFavorite(_ food: FoodItem, modelContext: ModelContext) {
-        let item = MealItem(
+        let item = TempMealItem(
             name: food.name,
             carbs: food.carbsPerServing,
             servingSize: food.defaultServingSize
@@ -58,8 +67,7 @@ final class MealLogViewModel {
 
         appLog("saveMeal: \(currentItems.count) items, type=\(selectedMealType.rawValue)", category: "DATA")
 
-        // Create meal without items first, then establish relationships
-        // after inserting everything into the context to avoid SwiftData crash
+        // Create meal and insert into context first
         let meal = Meal(
             mealType: selectedMealType,
             name: mealName.isEmpty ? nil : mealName.uppercased(),
@@ -67,33 +75,54 @@ final class MealLogViewModel {
         )
         modelContext.insert(meal)
 
-        // Insert each MealItem into context and attach to meal
-        for item in currentItems {
-            modelContext.insert(item)
-            item.meal = meal
+        // Create real MealItem @Model objects from TempMealItems and attach to meal
+        var savedItems: [MealItem] = []
+        for temp in currentItems {
+            let mealItem = MealItem(
+                name: temp.name,
+                carbs: temp.carbs,
+                servingSize: temp.servingSize
+            )
+            modelContext.insert(mealItem)
+            mealItem.meal = meal
+            savedItems.append(mealItem)
         }
-        meal.items = currentItems
+        meal.items = savedItems
 
         appLog("saveMeal: meal inserted with \(meal.items.count) items", category: "DATA")
 
         // Save new foods to favorites database
-        for item in currentItems {
-            let itemName = item.name
+        for temp in currentItems {
+            let itemName = temp.name
             let predicate = #Predicate<FoodItem> { $0.name == itemName }
             let descriptor = FetchDescriptor<FoodItem>(predicate: predicate)
             if (try? modelContext.fetch(descriptor))?.isEmpty ?? true {
                 let foodItem = FoodItem(
-                    name: item.name,
-                    carbsPerServing: item.carbs,
-                    defaultServingSize: item.servingSize,
+                    name: temp.name,
+                    carbsPerServing: temp.carbs,
+                    defaultServingSize: temp.servingSize,
                     category: newItemCategory,
                     lastUsed: .now,
                     useCount: 1
                 )
                 modelContext.insert(foodItem)
-                appLog("saveMeal: new food saved to favorites: \(item.name)", category: "DATA")
+                appLog("saveMeal: new food saved to favorites: \(temp.name)", category: "DATA")
             }
         }
+
+        // Export to human-readable Databases folder
+        for temp in currentItems {
+            DatabaseExporter.shared.exportFood(
+                name: temp.name,
+                carbs: temp.carbs,
+                serving: temp.servingSize,
+                category: newItemCategory
+            )
+        }
+        DatabaseExporter.shared.exportMealToHistory(
+            items: currentItems.map { (name: $0.name, carbs: $0.carbs) },
+            mealType: selectedMealType.rawValue
+        )
 
         // Explicit save to catch any errors
         do {

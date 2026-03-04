@@ -144,8 +144,16 @@ struct DoseCalculatorView: View {
                             ChaosButton(title: "Confirm & Log Dose") {
                                 if let dose = viewModel.saveDose(modelContext: modelContext) {
                                     appLog("Dose logged: \(dose.totalUnits)u (meal=\(dose.mealUnits), corr=\(dose.correctionUnits), iob=\(dose.iobDeducted))", category: "DATA")
+                                    DatabaseExporter.shared.exportDose(
+                                        glucose: viewModel.currentGlucose,
+                                        correction: dose.correctionUnits,
+                                        carbDose: dose.mealUnits,
+                                        total: dose.totalUnits,
+                                        iob: dose.iobDeducted
+                                    )
                                     showSavedConfirmation = true
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    Task {
+                                        try? await Task.sleep(for: .seconds(1.5))
                                         showSavedConfirmation = false
                                         viewModel.reset()
                                         viewModel.loadSettings(modelContext: modelContext)
