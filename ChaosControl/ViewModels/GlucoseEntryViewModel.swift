@@ -26,7 +26,7 @@ final class GlucoseEntryViewModel {
     }
 
     var rangeColor: Color {
-        guard let value = glucoseDouble else { return ChaosTheme.faded }
+        guard let value = glucoseDouble else { return .secondary }
         return ChaosTheme.glucoseColor(for: value)
     }
 

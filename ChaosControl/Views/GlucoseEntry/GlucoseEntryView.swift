@@ -7,333 +7,126 @@ struct GlucoseEntryView: View {
     @State private var showSavedConfirmation = false
 
     var body: some View {
-        ZStack {
-            ChaosTheme.background.ignoresSafeArea()
-            ConstructionLines(showVertical: false, horizontalOffset: 0.25)
-
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 0) {
-                    header
-                        .padding(.bottom, 24)
-
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
                     // Central reading input
-                    readingInput
-                        .padding(.bottom, 8)
+                    VStack(spacing: 8) {
+                        TextField("0", text: $viewModel.glucoseValue)
+                            .font(.system(size: 64, weight: .bold, design: .monospaced))
+                            .multilineTextAlignment(.center)
+                            .keyboardType(.numberPad)
+                            .frame(maxWidth: 200)
 
-                    // Range indicator
-                    rangeBar
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
+                        Text("mg/dL")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 16)
+
+                    // Range status
+                    if let value = viewModel.glucoseDouble {
+                        HStack {
+                            Text("LOW 70")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text("\(Int(value)) \(viewModel.rangeStatus)")
+                                .font(.caption)
+                                .foregroundColor(ChaosTheme.glucoseColor(for: value))
+                            Spacer()
+                            Text("180 HIGH")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Divider()
 
                     // Context tags
-                    contextSection
-                        .padding(.bottom, 20)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Reading Context")
+                            .font(.headline)
+
+                        FlowLayout(spacing: 8) {
+                            ForEach(ReadingContext.allCases, id: \.self) { context in
+                                Button {
+                                    if viewModel.selectedContext == context {
+                                        viewModel.selectedContext = nil
+                                    } else {
+                                        viewModel.selectedContext = context
+                                    }
+                                } label: {
+                                    Text(context.rawValue)
+                                        .font(.caption)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(viewModel.selectedContext == context ? Color.accentColor.opacity(0.15) : Color(.systemGray6))
+                                        .cornerRadius(6)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
 
                     // Timestamp
-                    timestampRow
-                        .padding(.bottom, 20)
+                    HStack {
+                        Text("Timestamp")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        DatePicker("", selection: $viewModel.timestamp)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                    }
+
+                    Divider()
 
                     // Notes
-                    notesSection
-                        .padding(.bottom, 20)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Notes")
+                            .font(.headline)
+
+                        TextField("Add notes...", text: $viewModel.notes, axis: .vertical)
+                            .lineLimit(3...6)
+                            .textFieldStyle(.roundedBorder)
+                    }
 
                     // Buttons
-                    buttonSection
+                    VStack(spacing: 10) {
+                        ChaosButton(title: "Log Reading") {
+                            if let _ = viewModel.save(modelContext: modelContext) {
+                                showSavedConfirmation = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    showSavedConfirmation = false
+                                    viewModel.reset()
+                                }
+                            }
+                        }
+
+                        ChaosSecondaryButton(title: "Log & Calculate Dose") {
+                            if let _ = viewModel.save(modelContext: modelContext) {
+                                viewModel.reset()
+                            }
+                        }
+                    }
                 }
-                .padding(.horizontal, ChaosTheme.screenPadding)
-                .padding(.bottom, 20)
+                .padding()
             }
             .chaosKeyboardDismiss()
-
-            // Annotations
-            VStack {
-                HStack {
-                    Spacer()
-                    AnnotationText(text: "CC-GL-04")
-                }
-                Spacer()
-                HStack {
-                    AnnotationText(text: "\u{16A0}\u{16D6} ENTRY.LOG")
-                    Spacer()
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .allowsHitTesting(false)
+            .navigationTitle("Glucose Entry")
         }
         .overlay {
             if showSavedConfirmation {
-                savedOverlay
+                VStack {
+                    Text("Logged!")
+                        .font(.title2.bold())
+                        .foregroundColor(.green)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.ultraThinMaterial)
+                .transition(.opacity)
             }
         }
-    }
-
-    // MARK: - Header
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("GLUCOSE ENTRY")
-                .font(ChaosTheme.titleFont)
-                .foregroundColor(ChaosTheme.ink)
-                .tracking(4)
-
-            Text("BLOOD SUGAR READING // MANUAL")
-                .font(ChaosTheme.captionFont)
-                .foregroundColor(ChaosTheme.faded)
-                .tracking(2)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Reading Input
-
-    private var readingInput: some View {
-        ZStack {
-            // Decorative circles
-            Circle()
-                .stroke(ChaosTheme.ink.opacity(0.03), style: StrokeStyle(lineWidth: 0.5, dash: [4, 8]))
-                .frame(width: 200, height: 200)
-
-            Circle()
-                .stroke(ChaosTheme.ink.opacity(0.03), lineWidth: 0.3)
-                .frame(width: 150, height: 150)
-
-            // Crosshair
-            Rectangle()
-                .fill(ChaosTheme.red.opacity(0.08))
-                .frame(width: 250, height: 0.3)
-
-            Rectangle()
-                .fill(ChaosTheme.red.opacity(0.08))
-                .frame(width: 0.3, height: 180)
-
-            // Center dot
-            Circle()
-                .fill(ChaosTheme.red.opacity(0.15))
-                .frame(width: 3, height: 3)
-
-            VStack(spacing: 6) {
-                TextField("", text: $viewModel.glucoseValue)
-                    .font(ChaosTheme.font(80))
-                    .foregroundColor(ChaosTheme.ink)
-                    .tracking(4)
-                    .multilineTextAlignment(.center)
-                    .keyboardType(.numberPad)
-                    .frame(maxWidth: 200)
-
-                Text("MG / DL")
-                    .font(ChaosTheme.font(14))
-                    .foregroundColor(ChaosTheme.faded)
-                    .tracking(4)
-            }
-        }
-        .frame(height: 200)
-    }
-
-    // MARK: - Range Bar
-
-    private var rangeBar: some View {
-        VStack(spacing: 6) {
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    // Range gradient track
-                    LinearGradient(
-                        colors: [
-                            ChaosTheme.danger.opacity(0.4),
-                            ChaosTheme.warning.opacity(0.4),
-                            ChaosTheme.inRange.opacity(0.4),
-                            ChaosTheme.warning.opacity(0.4),
-                            ChaosTheme.danger.opacity(0.4)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(height: 3)
-                    .clipShape(Capsule())
-
-                    // Marker
-                    if viewModel.glucoseDouble != nil {
-                        Rectangle()
-                            .fill(ChaosTheme.ink)
-                            .frame(width: 2, height: 11)
-                            .offset(x: geometry.size.width * viewModel.rangePosition, y: -4)
-                    }
-                }
-            }
-            .frame(height: 11)
-
-            // Labels
-            HStack {
-                Text("LOW")
-                    .font(ChaosTheme.annotationFont)
-                    .foregroundColor(ChaosTheme.faded)
-                Text("70")
-                    .font(ChaosTheme.annotationFont)
-                    .foregroundColor(ChaosTheme.faded)
-                Spacer()
-                if let value = viewModel.glucoseDouble {
-                    Text("\(Int(value)) \(viewModel.rangeStatus)")
-                        .font(ChaosTheme.microFont)
-                        .foregroundColor(ChaosTheme.glucoseColor(for: value))
-                }
-                Spacer()
-                Text("180")
-                    .font(ChaosTheme.annotationFont)
-                    .foregroundColor(ChaosTheme.faded)
-                Text("HIGH")
-                    .font(ChaosTheme.annotationFont)
-                    .foregroundColor(ChaosTheme.faded)
-            }
-        }
-    }
-
-    // MARK: - Context Tags
-
-    private var contextSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "READING CONTEXT")
-
-            FlowLayout(spacing: 8) {
-                ForEach(ReadingContext.allCases, id: \.self) { context in
-                    contextTag(context)
-                }
-            }
-        }
-    }
-
-    private func contextTag(_ context: ReadingContext) -> some View {
-        Button {
-            if viewModel.selectedContext == context {
-                viewModel.selectedContext = nil
-            } else {
-                viewModel.selectedContext = context
-            }
-        } label: {
-            Text(context.rawValue)
-                .font(ChaosTheme.captionFont)
-                .foregroundColor(viewModel.selectedContext == context ? ChaosTheme.red : ChaosTheme.faded)
-                .tracking(2)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(viewModel.selectedContext == context ? ChaosTheme.red.opacity(0.03) : .clear)
-                .overlay(
-                    Rectangle()
-                        .stroke(
-                            viewModel.selectedContext == context ? ChaosTheme.red.opacity(0.4) : ChaosTheme.border,
-                            lineWidth: 0.5
-                        )
-                )
-                .overlay(alignment: .topLeading) {
-                    if viewModel.selectedContext == context {
-                        CornerBracket()
-                            .stroke(ChaosTheme.red, lineWidth: 0.5)
-                            .frame(width: 4, height: 4)
-                            .offset(x: -0.5, y: -0.5)
-                    }
-                }
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Timestamp
-
-    private var timestampRow: some View {
-        HStack {
-            Text("TIMESTAMP")
-                .font(ChaosTheme.captionFont)
-                .foregroundColor(ChaosTheme.faded)
-                .tracking(2)
-
-            Spacer()
-
-            DatePicker("", selection: $viewModel.timestamp)
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .tint(ChaosTheme.red)
-                .padding(6)
-                .background(ChaosTheme.paperDark.opacity(0.5))
-                .overlay(
-                    Rectangle().stroke(ChaosTheme.border, lineWidth: 0.5)
-                )
-                .overlay(alignment: .topLeading) {
-                    CornerBracket()
-                        .stroke(ChaosTheme.red, lineWidth: 0.5)
-                        .frame(width: 4, height: 4)
-                        .offset(x: -0.5, y: -0.5)
-                }
-        }
-        .padding(.vertical, 10)
-        .overlay(alignment: .top) {
-            Rectangle().fill(ChaosTheme.ink.opacity(0.06)).frame(height: 0.5)
-        }
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(ChaosTheme.ink.opacity(0.06)).frame(height: 0.5)
-        }
-    }
-
-    // MARK: - Notes
-
-    private var notesSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            SectionHeader(title: "NOTES")
-
-            TextField("ADD NOTES...", text: $viewModel.notes, axis: .vertical)
-                .font(ChaosTheme.font(12))
-                .foregroundColor(ChaosTheme.ink)
-                .tracking(1)
-                .lineLimit(3...6)
-                .padding(12)
-                .background(ChaosTheme.paperDark.opacity(0.5))
-                .overlay(alignment: .bottom) {
-                    LinearGradient(
-                        colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(height: 1.5)
-                }
-                .overlay(
-                    Rectangle()
-                        .stroke(ChaosTheme.ink.opacity(0.08), lineWidth: 0.5)
-                )
-        }
-    }
-
-    // MARK: - Buttons
-
-    private var buttonSection: some View {
-        VStack(spacing: 10) {
-            ChaosButton(title: "LOG READING") {
-                if let _ = viewModel.save(modelContext: modelContext) {
-                    showSavedConfirmation = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        showSavedConfirmation = false
-                        viewModel.reset()
-                    }
-                }
-            }
-
-            ChaosSecondaryButton(title: "LOG & CALCULATE DOSE") {
-                // Save and navigate to dose calculator
-                if let _ = viewModel.save(modelContext: modelContext) {
-                    viewModel.reset()
-                }
-            }
-        }
-    }
-
-    // MARK: - Saved Confirmation
-
-    private var savedOverlay: some View {
-        VStack {
-            Text("\u{25C6} LOGGED")
-                .font(ChaosTheme.font(17))
-                .foregroundColor(ChaosTheme.inRange)
-                .tracking(4)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(ChaosTheme.background.opacity(0.9))
-        .transition(.opacity)
     }
 }
 

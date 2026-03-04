@@ -3,16 +3,6 @@ import SwiftData
 
 @main
 struct ChaosControlApp: App {
-    init() {
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(ChaosTheme.background)
-        appearance.shadowColor = .clear
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        UINavigationBar.appearance().compactAppearance = appearance
-    }
-
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             GlucoseReading.self,
@@ -59,7 +49,6 @@ struct ChaosControlApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .preferredColorScheme(.light)
         }
         .modelContainer(sharedModelContainer)
     }

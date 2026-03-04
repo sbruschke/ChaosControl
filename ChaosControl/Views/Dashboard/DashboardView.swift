@@ -9,63 +9,99 @@ struct DashboardView: View {
     @Binding var selectedTab: Int
 
     var body: some View {
-        ZStack {
-            ChaosTheme.background.ignoresSafeArea()
-            ConstructionLines(verticalOffset: 0.5, horizontalOffset: 0.35)
-
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 0) {
-                    header
-                        .padding(.bottom, 6)
-
-                    dateLine
-                        .padding(.bottom, 16)
-
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
                     // Central gauge
-                    gaugeSection
-                        .padding(.bottom, 12)
+                    GlucoseGaugeView(
+                        value: viewModel.currentReading?.value ?? 0,
+                        trend: viewModel.currentReading?.trend ?? .none,
+                        timeInRange: viewModel.timeInRange
+                    )
 
                     // Status
-                    statusSection
-                        .padding(.bottom, 12)
+                    if let reading = viewModel.currentReading {
+                        Text(viewModel.statusText)
+                            .foregroundColor(ChaosTheme.glucoseColor(for: reading.value))
+                    } else {
+                        Text("Awaiting Data")
+                            .foregroundStyle(.secondary)
+                    }
 
-                    RedDivider()
-                        .padding(.bottom, 12)
+                    Divider()
 
                     // Quick actions
-                    quickActions
-                        .padding(.bottom, 12)
-
-                    ChaosDivider()
-                        .padding(.bottom, 14)
+                    HStack(spacing: 8) {
+                        QuickActionButton(title: "+ Glucose") { }
+                        QuickActionButton(title: "+ Meal") { }
+                        QuickActionButton(title: "Calc Dose") { }
+                    }
 
                     // Stat cards
-                    statsGrid
-                        .padding(.bottom, 14)
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 10),
+                        GridItem(.flexible(), spacing: 10)
+                    ], spacing: 10) {
+                        StatCard(
+                            label: "ACTIVE INSULIN",
+                            value: String(format: "%.1f", viewModel.activeInsulin),
+                            unit: "u"
+                        )
+                        StatCard(
+                            label: "LAST MEAL",
+                            value: viewModel.lastMealTimeString
+                        )
+                        StatCard(
+                            label: "CARBS TODAY",
+                            value: "\(Int(viewModel.carbsToday))",
+                            unit: "g"
+                        )
+                        StatCard(
+                            label: "TIME IN RANGE",
+                            value: "\(Int(viewModel.timeInRange))",
+                            unit: "%",
+                            valueColor: .green
+                        )
+                    }
 
-                    // Recent readings sparkline
-                    recentReadings
-                }
-                .padding(.horizontal, ChaosTheme.screenPadding)
-                .padding(.bottom, 20)
-            }
+                    // Recent readings
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Recent Readings")
+                            .font(.headline)
 
-            // Corner annotations
-            VStack {
-                HStack {
-                    Spacer()
-                    AnnotationText(text: "SYS.v0.1")
+                        if !viewModel.recentReadings.isEmpty {
+                            SparklineView(readings: Array(viewModel.recentReadings.prefix(5).reversed()))
+
+                            HStack {
+                                ForEach(viewModel.recentReadings.prefix(5)) { reading in
+                                    VStack(spacing: 2) {
+                                        Text("\(reading.mgDL)")
+                                            .font(.body)
+                                        Text(reading.timestamp.formatted(.dateTime.hour().minute()))
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                            }
+                        } else {
+                            Text("No readings yet")
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 20)
+                        }
+                    }
                 }
-                Spacer()
-                HStack {
-                    AnnotationText(text: "REF//042")
-                    Spacer()
-                    AnnotationText(text: "CC-DB-01")
+                .padding()
+            }
+            .navigationTitle("Chaos Control")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showingSettings = true } label: {
+                        Image(systemName: "gearshape")
+                    }
                 }
             }
-            .padding(.horizontal, 22)
-            .padding(.vertical, 8)
-            .allowsHitTesting(false)
         }
         .onAppear {
             viewModel.loadData(modelContext: modelContext)
@@ -83,153 +119,6 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView(dashboardViewModel: viewModel)
-        }
-    }
-
-    // MARK: - Header
-
-    private var header: some View {
-        HStack {
-            Text("CHAOS CONTROL")
-                .font(ChaosTheme.titleFont)
-                .foregroundColor(ChaosTheme.ink)
-                .tracking(4)
-
-            Spacer()
-
-            Button { showingSettings = true } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 17, weight: .light))
-                    .foregroundColor(ChaosTheme.ink.opacity(0.5))
-            }
-        }
-    }
-
-    private var dateLine: some View {
-        HStack {
-            Text(Date.now.formatted(.dateTime.day().month(.abbreviated).year()))
-                .font(ChaosTheme.font(12))
-                .foregroundColor(ChaosTheme.faded)
-                .tracking(2)
-                .textCase(.uppercase)
-
-            Text("//")
-                .font(ChaosTheme.font(12))
-                .foregroundColor(ChaosTheme.red)
-
-            Text(Date.now.formatted(.dateTime.hour().minute()))
-                .font(ChaosTheme.font(12))
-                .foregroundColor(ChaosTheme.faded)
-                .tracking(2)
-
-            Spacer()
-        }
-    }
-
-    // MARK: - Gauge
-
-    private var gaugeSection: some View {
-        GlucoseGaugeView(
-            value: viewModel.currentReading?.value ?? 0,
-            trend: viewModel.currentReading?.trend ?? .none,
-            timeInRange: viewModel.timeInRange
-        )
-    }
-
-    // MARK: - Status
-
-    private var statusSection: some View {
-        VStack(spacing: 4) {
-            Text("STATUS")
-                .font(ChaosTheme.font(12))
-                .foregroundColor(ChaosTheme.faded)
-                .tracking(3)
-
-            if let reading = viewModel.currentReading {
-                Text(viewModel.statusText)
-                    .font(ChaosTheme.font(14))
-                    .foregroundColor(ChaosTheme.glucoseColor(for: reading.value))
-                    .tracking(2)
-            } else {
-                Text("AWAITING DATA")
-                    .font(ChaosTheme.font(14))
-                    .foregroundColor(ChaosTheme.faded)
-                    .tracking(2)
-            }
-        }
-    }
-
-    // MARK: - Quick Actions
-
-    private var quickActions: some View {
-        HStack(spacing: 8) {
-            QuickActionButton(title: "+ GLUCOSE") { }
-            QuickActionButton(title: "+ MEAL") { }
-            QuickActionButton(title: "CALC DOSE") { }
-        }
-    }
-
-    // MARK: - Stats Grid
-
-    private var statsGrid: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible(), spacing: 10),
-            GridItem(.flexible(), spacing: 10)
-        ], spacing: 10) {
-            StatCard(
-                label: "ACTIVE INSULIN",
-                value: String(format: "%.1f", viewModel.activeInsulin),
-                unit: "u"
-            )
-            StatCard(
-                label: "LAST MEAL",
-                value: viewModel.lastMealTimeString
-            )
-            StatCard(
-                label: "CARBS TODAY",
-                value: "\(Int(viewModel.carbsToday))",
-                unit: "g"
-            )
-            StatCard(
-                label: "TIME IN RANGE",
-                value: "\(Int(viewModel.timeInRange))",
-                unit: "%",
-                valueColor: ChaosTheme.inRange
-            )
-        }
-    }
-
-    // MARK: - Recent Readings
-
-    private var recentReadings: some View {
-        VStack(spacing: 10) {
-            SectionHeader(title: "RECENT READINGS")
-
-            if !viewModel.recentReadings.isEmpty {
-                SparklineView(readings: Array(viewModel.recentReadings.prefix(5).reversed()))
-
-                HStack {
-                    ForEach(viewModel.recentReadings.prefix(5)) { reading in
-                        VStack(spacing: 2) {
-                            Text("\(reading.mgDL)")
-                                .font(ChaosTheme.bodyFont)
-                                .foregroundColor(ChaosTheme.ink)
-                            Text(reading.timestamp.formatted(.dateTime.hour().minute()))
-                                .font(ChaosTheme.captionFont)
-                                .foregroundColor(ChaosTheme.faded)
-                                .tracking(1)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-            } else {
-                Text("NO READINGS YET")
-                    .font(ChaosTheme.captionFont)
-                    .foregroundColor(ChaosTheme.faded)
-                    .tracking(2)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
-            }
         }
     }
 }

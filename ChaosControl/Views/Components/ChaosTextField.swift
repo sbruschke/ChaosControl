@@ -1,7 +1,5 @@
 import SwiftUI
 
-// MARK: - Chaos Input Field
-
 struct ChaosInputField: View {
     let label: String
     @Binding var value: String
@@ -9,68 +7,27 @@ struct ChaosInputField: View {
     var highlighted: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Label
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(ChaosTheme.red.opacity(0.4))
-                    .frame(width: 4, height: 4)
-                Text(label)
-                    .font(ChaosTheme.microFont)
-                    .foregroundColor(ChaosTheme.faded)
-                    .tracking(2.5)
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-            // Field
             HStack {
-                TextField("", text: $value)
-                    .font(ChaosTheme.font(26))
-                    .foregroundColor(ChaosTheme.ink)
-                    .tracking(1)
+                TextField(label, text: $value)
                     .keyboardType(.decimalPad)
 
                 if !unit.isEmpty {
                     Text(unit)
-                        .font(ChaosTheme.font(12))
-                        .foregroundColor(ChaosTheme.faded)
-                        .tracking(2)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .padding(14)
-            .background(ChaosTheme.paperDark.opacity(0.5))
-            .overlay(alignment: .bottom) {
-                LinearGradient(
-                    colors: [ChaosTheme.red.opacity(0.4), ChaosTheme.red.opacity(0.1)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .frame(height: 1.5)
-            }
-            .overlay(
-                Rectangle()
-                    .stroke(
-                        highlighted ? ChaosTheme.red.opacity(0.25) : ChaosTheme.border,
-                        lineWidth: 0.5
-                    )
-            )
-            .overlay(alignment: .topLeading) {
-                CornerBracket()
-                    .stroke(ChaosTheme.red, lineWidth: 0.5)
-                    .frame(width: 6, height: 6)
-                    .offset(x: -0.5, y: -0.5)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                CornerBracket()
-                    .rotation(Angle(degrees: 180))
-                    .stroke(ChaosTheme.red, lineWidth: 0.5)
-                    .frame(width: 6, height: 6)
-                    .offset(x: 0.5, y: 0.5)
-            }
+            .padding(10)
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
         }
     }
 }
-
-// MARK: - Numeric Input Field (Double binding)
 
 struct ChaosNumericField: View {
     let label: String

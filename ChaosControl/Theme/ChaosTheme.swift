@@ -1,60 +1,8 @@
 import SwiftUI
 
-// MARK: - Chaos Control Design System
-// Archaic-Technical Blueprint Aesthetic
+// MARK: - Chaos Control Utilities (Stripped for functionality testing)
 
 struct ChaosTheme {
-
-    // MARK: - Colors
-
-    /// Warm cream parchment background
-    static let background = Color(hex: "F2EDE4")
-    /// Near-black ink for primary text and lines
-    static let ink = Color(hex: "1C1A17")
-    /// Red accent for construction lines, highlights, and interactive elements
-    static let red = Color(hex: "C43E3E")
-    /// Faded ink for secondary text and labels
-    static let faded = Color(hex: "9B9590")
-    /// Paper slightly darker variant
-    static let paperDark = Color(hex: "E8E1D5")
-
-    /// Blood sugar in-range / success
-    static let inRange = Color(hex: "4A7C59")
-    /// Blood sugar high / warning
-    static let warning = Color(hex: "C4873E")
-    /// Blood sugar critical / danger (same as accent red)
-    static let danger = Color(hex: "C43E3E")
-    /// Blood sugar low
-    static let low = Color(hex: "8B6CC4")
-
-    /// Very faint construction line color
-    static let constructionLine = Color(hex: "C43E3E").opacity(0.12)
-    /// Border color for cards
-    static let border = Color(hex: "1C1A17").opacity(0.12)
-    /// Faint grid line
-    static let gridLine = Color(hex: "1C1A17").opacity(0.015)
-
-    // MARK: - Typography
-
-    static let fontName = "ShadowMonoRegular"
-
-    static func font(_ size: CGFloat) -> Font {
-        .custom(fontName, size: size)
-    }
-
-    // Common font sizes
-    static let displayFont = font(48)
-    static let titleFont = font(18)
-    static let bodyFont = font(14)
-    static let captionFont = font(11)
-    static let microFont = font(9)
-    static let annotationFont = font(8)
-
-    // MARK: - Spacing
-
-    static let cornerBracketSize: CGFloat = 6
-    static let cardPadding: CGFloat = 12
-    static let screenPadding: CGFloat = 20
 
     // MARK: - Glucose Ranges
 
@@ -65,11 +13,11 @@ struct ChaosTheme {
 
     static func glucoseColor(for value: Double) -> Color {
         switch value {
-        case ..<glucoseRangeCriticalLow: return danger
-        case ..<glucoseRangeLow: return low
-        case ..<glucoseRangeHigh: return inRange
-        case ..<glucoseRangeCriticalHigh: return warning
-        default: return danger
+        case ..<glucoseRangeCriticalLow: return .red
+        case ..<glucoseRangeLow: return .purple
+        case ..<glucoseRangeHigh: return .green
+        case ..<glucoseRangeCriticalHigh: return .orange
+        default: return .red
         }
     }
 
@@ -110,48 +58,9 @@ extension Color {
     }
 }
 
-// MARK: - View Modifiers
-
-struct ChaosCardStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(ChaosTheme.cardPadding)
-            .background(ChaosTheme.background.opacity(0.5))
-            .overlay(
-                Rectangle()
-                    .stroke(ChaosTheme.border, lineWidth: 0.5)
-            )
-            .overlay(alignment: .topLeading) {
-                CornerBracket()
-                    .stroke(ChaosTheme.red, lineWidth: 0.5)
-                    .frame(width: ChaosTheme.cornerBracketSize, height: ChaosTheme.cornerBracketSize)
-                    .offset(x: -0.5, y: -0.5)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                CornerBracket()
-                    .rotation(Angle(degrees: 180))
-                    .stroke(ChaosTheme.red, lineWidth: 0.5)
-                    .frame(width: ChaosTheme.cornerBracketSize, height: ChaosTheme.cornerBracketSize)
-                    .offset(x: 0.5, y: 0.5)
-            }
-    }
-}
-
-struct CornerBracket: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        return path
-    }
-}
+// MARK: - View Utilities
 
 extension View {
-    func chaosCard() -> some View {
-        modifier(ChaosCardStyle())
-    }
-
     func chaosKeyboardDismiss() -> some View {
         self.scrollDismissesKeyboard(.interactively)
     }
